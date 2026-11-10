@@ -8,14 +8,14 @@ export function openModal({
   title,
   subtitle = "",
   body = "",
-  submitLabel = "Save",
+  submitLabel = "Guardar",
   onSubmit = null,
   onMount = null,
   onClose = null,
   size = "",
   footerExtra = "",
   hideSubmit = false,
-  closeLabel = "Cancel",
+  closeLabel = "Cancelar",
 }) {
   const root = document.getElementById("modal-root");
   if (activeClose) activeClose({ silent: true });
@@ -45,7 +45,7 @@ export function openModal({
             <h2>${esc(title)}</h2>
             ${subtitle ? `<p class="modal-subtitle">${esc(subtitle)}</p>` : ""}
           </div>
-          <button type="button" class="icon-btn" data-close aria-label="Close">${icon("x")}</button>
+          <button type="button" class="icon-btn" data-close aria-label="Cerrar">${icon("x")}</button>
         </div>
         <form novalidate>
           <div class="modal-body">${body}</div>
@@ -80,7 +80,7 @@ export function openModal({
       if (submit) {
         submit.disabled = true;
         submit.dataset.label = submit.textContent;
-        submit.textContent = "Saving…";
+        submit.textContent = "Guardando…";
       }
       try {
         const result = await onSubmit(form);
@@ -93,7 +93,7 @@ export function openModal({
         }
         close();
       } catch (error) {
-        toast(error.message || "Something went wrong.", "error");
+        toast(error.message || "Algo salió mal.", "error");
         if (submit) {
           submit.disabled = false;
           submit.textContent = submit.dataset.label || submitLabel;
@@ -119,8 +119,8 @@ export function openModal({
 export function confirmDialog({
   title,
   message,
-  confirmLabel = "Delete",
-  cancelLabel = "Cancel",
+  confirmLabel = "Eliminar",
+  cancelLabel = "Cancelar",
   danger = true,
   onConfirm,
 }) {
@@ -138,13 +138,13 @@ export function confirmDialog({
         button?.addEventListener("click", async () => {
           confirmed = true;
           button.disabled = true;
-          button.textContent = "Working…";
+          button.textContent = "Trabajando…";
           try {
             await onConfirm?.();
             close();
             resolve(true);
           } catch (error) {
-            toast(error.message || "Something went wrong.", "error");
+            toast(error.message || "Algo salió mal.", "error");
             button.disabled = false;
             button.textContent = confirmLabel;
           }
@@ -187,16 +187,16 @@ export function previewDocument(doc) {
   } else if (kind === "image") {
     body = `<img class="preview-image" src="${esc(doc.url)}" alt="${esc(doc.name)}">`;
   } else {
-    body = `<div class="preview-unsupported">This file type can't be previewed in the browser.<br><a class="btn btn-ghost btn-sm" style="margin-top:12px" href="${esc(doc.url)}?download=1">${icon("download")} Download ${esc(doc.name)}</a></div>`;
+    body = `<div class="preview-unsupported">Este tipo de archivo no se puede previsualizar en el navegador.<br><a class="btn btn-ghost btn-sm" style="margin-top:12px" href="${esc(doc.url)}?download=1">${icon("download")} Descargar ${esc(doc.name)}</a></div>`;
   }
   openModal({
     title: doc.name,
-    subtitle: "Document preview",
+    subtitle: "Vista previa del documento",
     size: "lg",
     hideSubmit: true,
-    closeLabel: "Close",
+    closeLabel: "Cerrar",
     body: `<div class="preview-modal-body">${body}</div>`,
-    footerExtra: `<a class="btn btn-ghost btn-sm" href="${esc(doc.url)}?download=1" style="margin-right:auto">${icon("download")} Download</a>`,
+    footerExtra: `<a class="btn btn-ghost btn-sm" href="${esc(doc.url)}?download=1" style="margin-right:auto">${icon("download")} Descargar</a>`,
   });
 }
 

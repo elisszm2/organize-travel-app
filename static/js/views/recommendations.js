@@ -1,4 +1,4 @@
-/* Recommendations and saved ideas. */
+/* Recommendations: quick ideas and comparison tables. */
 
 import { api } from "../api.js";
 import { confirmDialog, toast } from "../ui.js";
@@ -18,16 +18,66 @@ function recCard(rec) {
           ${rec.address ? `<div class="rec-address">${icon("pin")} <span>${esc(rec.address)}</span></div>` : ""}
         </div>
         <div class="rec-actions">
-          <button type="button" class="icon-btn" data-rec-edit title="Edit idea" aria-label="Edit idea">${icon("edit")}</button>
-          <button type="button" class="icon-btn danger" data-rec-delete title="Delete idea" aria-label="Delete idea">${icon("trash")}</button>
+          <button type="button" class="icon-btn" data-rec-edit title="Editar idea" aria-label="Editar idea">${icon("edit")}</button>
+          <button type="button" class="icon-btn danger" data-rec-delete title="Eliminar idea" aria-label="Eliminar idea">${icon("trash")}</button>
         </div>
       </div>
       ${rec.notes ? `<div class="rec-notes">${esc(rec.notes)}</div>` : ""}
       <div class="rec-foot">
-        <span class="pill ${category.tone}">${icon(category.icon)} ${category.label}${pinned ? " · on map" : ""}</span>
+        <span class="pill ${category.tone}">${icon(category.icon)} ${category.label}${pinned ? " · en el mapa" : ""}</span>
         ${
           url
-            ? `<a class="rec-link" href="${esc(url)}" target="_blank" rel="noreferrer">Open link ${icon("external")}</a>`
+            ? `<a class="rec-link" href="${esc(url)}" target="_blank" rel="noreferrer">Abrir enlace ${icon("external")}</a>`
+            : ""
+        }
+      </div>
+    </article>`;
+}
+
+function tableCard(rec) {
+  const category = recommendationCategory(rec.category);
+  const url = safeUrl(rec.url);
+  const columns = Array.isArray(rec.table_columns) ? rec.table_columns : [];
+  const rows = Array.isArray(rec.table_rows) ? rec.table_rows : [];
+  return `
+    <article class="rec-card table-card" data-rec-id="${rec.id}">
+      <div class="rec-top">
+        <div class="rec-icon ${category.tone}">${icon("layers")}</div>
+        <div class="rec-main">
+          <div class="rec-title">${esc(rec.title)}</div>
+        </div>
+        <div class="rec-actions">
+          <button type="button" class="icon-btn" data-rec-edit title="Editar tabla" aria-label="Editar tabla">${icon("edit")}</button>
+          <button type="button" class="icon-btn danger" data-rec-delete title="Eliminar tabla" aria-label="Eliminar tabla">${icon("trash")}</button>
+        </div>
+      </div>
+      ${
+        columns.length
+          ? `<div class="rec-table-wrap">
+              <table class="rec-table">
+                <thead>
+                  <tr>${columns.map((column) => `<th>${esc(column)}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                  ${rows
+                    .map(
+                      (cells) =>
+                        `<tr>${columns
+                          .map((_, index) => `<td>${esc(cells[index] ?? "")}</td>`)
+                          .join("")}</tr>`,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>`
+          : ""
+      }
+      ${rec.notes ? `<div class="rec-notes">${esc(rec.notes)}</div>` : ""}
+      <div class="rec-foot">
+        <span class="pill ${category.tone}">${icon("layers")} Tabla comparativa</span>
+        ${
+          url
+            ? `<a class="rec-link" href="${esc(url)}" target="_blank" rel="noreferrer">Abrir enlace ${icon("external")}</a>`
             : ""
         }
       </div>
@@ -36,46 +86,68 @@ function recCard(rec) {
 
 export function renderRecommendations(root, trip, ctx) {
   const recommendations = trip.recommendations || [];
+  const ideas = recommendations.filter((rec) => rec.kind !== "table");
+  const tables = recommendations.filter((rec) => rec.kind === "table");
 
   root.innerHTML = `
     <div class="section-head">
       <div>
-        <h2>Ideas &amp; recommendations</h2>
-        <p>Places, restaurants and experiences worth remembering · ${recommendations.length} saved</p>
+        <h2>Ideas y recomendaciones</h2>
+        <p>Lugares, restaurantes, experiencias y tablas para comparar opciones · ${recommendations.length} guardada${recommendations.length === 1 ? "" : "s"}</p>
       </div>
-      <button type="button" class="btn btn-primary" data-add-rec>${icon("plus")} Save an idea</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary" data-add-rec>${icon("plus")} Guardar una idea</button>
+        <button type="button" class="btn btn-ghost" data-add-table>${icon("layers")} Tabla comparativa</button>
+      </div>
     </div>
 
     ${
       recommendations.length
-        ? `<div class="rec-grid">${recommendations.map(recCard).join("")}</div>`
+        ? `
+          ${tables.length ? `<div class="rec-section-title">${icon("layers")} Tablas comparativas</div>` : ""}
+          ${tables.length ? `<div class="rec-table-list">${tables.map(tableCard).join("")}</div>` : ""}
+          ${ideas.length ? `<div class="rec-section-title">${icon("sparkles")} Ideas</div>` : ""}
+          ${ideas.length ? `<div class="rec-grid">${ideas.map(recCard).join("")}</div>` : ""}
+        `
         : `<div class="card">${`<div class="empty-state">
              <div class="empty-icon">${icon("sparkles")}</div>
-             <div class="empty-title">Collect the good stuff</div>
-             <p class="empty-text">Save restaurants, viewpoints, museums and tips you find while planning. Pinned ideas appear on the trip map.</p>
-             <button type="button" class="btn btn-primary btn-sm" data-add-rec>${icon("plus")} Save first idea</button>
+             <div class="empty-title">Recoge lo bueno</div>
+             <p class="empty-text">Guarda restaurantes, miradores, museos y consejos que encuentres mientras planificas, o crea una tabla para comparar seguros, hoteles o viajes. Las ideas fijadas en el mapa aparecen en el mapa del viaje.</p>
+             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+               <button type="button" class="btn btn-primary btn-sm" data-add-rec>${icon("plus")} Guardar la primera idea</button>
+               <button type="button" class="btn btn-ghost btn-sm" data-add-table>${icon("layers")} Crear una tabla</button>
+             </div>
            </div>`}</div>`
     }`;
 
   root.querySelectorAll("[data-add-rec]").forEach((button) => {
-    button.addEventListener("click", () => openRecommendationModal({ trip, onSaved: ctx.refresh }));
+    button.addEventListener("click", () =>
+      openRecommendationModal({ trip, mode: "idea", onSaved: ctx.refresh }),
+    );
+  });
+
+  root.querySelectorAll("[data-add-table]").forEach((button) => {
+    button.addEventListener("click", () =>
+      openRecommendationModal({ trip, mode: "table", onSaved: ctx.refresh }),
+    );
   });
 
   root.querySelectorAll("[data-rec-id]").forEach((card) => {
     const rec = recommendations.find((item) => item.id === Number(card.dataset.recId));
     if (!rec) return;
+    const isTable = rec.kind === "table";
     card.querySelector("[data-rec-edit]")?.addEventListener("click", () => {
       openRecommendationModal({ trip, recommendation: rec, onSaved: ctx.refresh });
     });
     card.querySelector("[data-rec-delete]")?.addEventListener("click", async () => {
       await confirmDialog({
-        title: "Delete idea?",
-        message: `“${rec.title}” will be removed from this trip.`,
-        confirmLabel: "Delete idea",
+        title: isTable ? "¿Eliminar la tabla?" : "¿Eliminar la idea?",
+        message: `“${rec.title}” se eliminará de este viaje.`,
+        confirmLabel: isTable ? "Eliminar tabla" : "Eliminar idea",
         onConfirm: async () => {
           await api.deleteRecommendation(rec.id);
           await ctx.refresh();
-          toast("Idea deleted.");
+          toast(isTable ? "Tabla eliminada." : "Idea eliminada.");
         },
       });
     });

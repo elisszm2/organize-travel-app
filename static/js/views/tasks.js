@@ -14,7 +14,7 @@ export function renderTasks(root, trip, ctx) {
   const done = tasks.filter((task) => task.status === "done").length;
 
   const filters = [
-    { key: "all", label: "All", icon: "kanban", count: tasks.length },
+    { key: "all", label: "Todas", icon: "kanban", count: tasks.length },
     ...Object.entries(TASK_CATEGORIES).map(([key, meta]) => ({
       key,
       label: meta.label,
@@ -26,12 +26,12 @@ export function renderTasks(root, trip, ctx) {
   root.innerHTML = `
     <div class="section-head">
       <div>
-        <h2>Tasks</h2>
-        <p>Everything that needs to happen before and during the trip · ${done}/${tasks.length} done</p>
+        <h2>Tareas</h2>
+        <p>Todo lo que tiene que ocurrir antes y durante el viaje · ${done}/${tasks.length} hechas</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${done ? `<button type="button" class="btn btn-ghost btn-sm" data-clear-done>${icon("trash")} Clear done</button>` : ""}
-        <button type="button" class="btn btn-primary" data-add-task-main>${icon("plus")} Add task</button>
+        ${done ? `<button type="button" class="btn btn-ghost btn-sm" data-clear-done>${icon("trash")} Borrar hechas</button>` : ""}
+        <button type="button" class="btn btn-primary" data-add-task-main>${icon("plus")} Añadir tarea</button>
       </div>
     </div>
 
@@ -46,7 +46,7 @@ export function renderTasks(root, trip, ctx) {
           )
           .join("")}
       </div>
-      <span class="field-hint" style="display:inline-flex;align-items:center;gap:5px">${icon("grip")} Drag cards between columns</span>
+      <span class="field-hint" style="display:inline-flex;align-items:center;gap:5px">${icon("grip")} Arrastra las tarjetas entre columnas</span>
     </div>
 
     ${
@@ -54,9 +54,9 @@ export function renderTasks(root, trip, ctx) {
         ? `<div class="kanban-full">${kanbanColumnsHTML(filtered)}</div>`
         : `<div class="card">${`<div class="empty-state">
              <div class="empty-icon">${icon("kanban")}</div>
-             <div class="empty-title">No tasks yet</div>
-             <p class="empty-text">Add the first thing you need to book, check or prepare.</p>
-             <button type="button" class="btn btn-primary btn-sm" data-add-task-main>${icon("plus")} Add task</button>
+             <div class="empty-title">Aún no hay tareas</div>
+             <p class="empty-text">Añade lo primero que necesites reservar, revisar o preparar.</p>
+             <button type="button" class="btn btn-primary btn-sm" data-add-task-main>${icon("plus")} Añadir tarea</button>
            </div>`}</div>`
     }`;
 
@@ -73,16 +73,16 @@ export function renderTasks(root, trip, ctx) {
 
   root.querySelector("[data-clear-done]")?.addEventListener("click", async () => {
     await confirmDialog({
-      title: "Clear completed tasks?",
-      message: `${done} completed task${done === 1 ? "" : "s"} will be permanently deleted.`,
-      confirmLabel: "Clear done",
+      title: "¿Borrar las tareas completadas?",
+      message: `${done} tarea${done === 1 ? "" : "s"} completada${done === 1 ? "" : "s"} se eliminará${done === 1 ? "" : "n"} permanentemente.`,
+      confirmLabel: "Borrar hechas",
       onConfirm: async () => {
         const completed = tasks.filter((task) => task.status === "done");
         for (const task of completed) {
           await api.deleteTask(task.id);
         }
         await ctx.refresh();
-        toast(`${completed.length} task${completed.length === 1 ? "" : "s"} cleared.`);
+        toast(`${completed.length} tarea${completed.length === 1 ? "" : "s"} borrada${completed.length === 1 ? "" : "s"}.`);
       },
     });
   });

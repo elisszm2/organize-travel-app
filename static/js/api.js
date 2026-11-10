@@ -10,12 +10,12 @@ async function request(url, options = {}) {
   try {
     response = await fetch(url, opts);
   } catch {
-    throw new Error("Could not reach the server. Is Wanderlusst Travel still running?");
+    throw new Error("No se pudo conectar con el servidor. ¿Sigue funcionando Wanderlusst Travel?");
   }
   const isJson = (response.headers.get("content-type") || "").includes("application/json");
   const data = isJson ? await response.json().catch(() => ({})) : {};
   if (!response.ok) {
-    throw new Error(data.error || `Something went wrong (${response.status}).`);
+    throw new Error(data.error || `Algo salió mal (${response.status}).`);
   }
   return data;
 }
@@ -59,10 +59,11 @@ export const api = {
     request(`/api/transport/${id}`, { method: "PATCH", body: payload }),
   deleteTransport: (id) => request(`/api/transport/${id}`, { method: "DELETE" }),
 
-  uploadDocument: (tripId, file, bookingId = null) => {
+  uploadDocument: (tripId, file, bookingId = null, transportId = null) => {
     const form = new FormData();
     form.append("file", file);
     if (bookingId) form.append("booking_id", String(bookingId));
+    if (transportId) form.append("transport_id", String(transportId));
     return request(`/api/trips/${tripId}/documents`, { method: "POST", body: form });
   },
   deleteDocument: (id) => request(`/api/documents/${id}`, { method: "DELETE" }),

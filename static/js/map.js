@@ -46,7 +46,7 @@ export function renderTripMap(el, trip, options = {}) {
   }
 
   if (!window.L) {
-    el.innerHTML = `<div class="map-fallback">${icon("map")}<div>The map couldn't load.<br>Check your internet connection and refresh.</div></div>`;
+    el.innerHTML = `<div class="map-fallback">${icon("map")}<div>No se pudo cargar el mapa.<br>Revisa tu conexión a internet y recarga la página.</div></div>`;
     return;
   }
 
@@ -87,7 +87,7 @@ export function renderTripMap(el, trip, options = {}) {
       const popup = `
         <div>
           <div class="map-popup-title">${esc(activity.title)}</div>
-          <div class="map-popup-meta">${esc(day.title || `Day ${day.day_number}`)}${day.date ? ` · ${esc(fmtDate(day.date, "short"))}` : ""}${activity.time ? ` · ${esc(activity.time)}` : ""}</div>
+          <div class="map-popup-meta">${esc(day.title || `Día ${day.day_number}`)}${day.date ? ` · ${esc(fmtDate(day.date, "short"))}` : ""}${activity.time ? ` · ${esc(activity.time)}` : ""}</div>
           ${activity.location ? `<div class="map-popup-meta">${esc(activity.location)}</div>` : ""}
           ${activity.notes ? `<div class="map-popup-notes">${esc(activity.notes)}</div>` : ""}
         </div>`;
@@ -173,7 +173,7 @@ export function renderTripMap(el, trip, options = {}) {
     if (wrap && options.onLocate) {
       const note = document.createElement("div");
       note.className = "map-overlay-note";
-      note.innerHTML = `${icon("pin")}<span>No places pinned yet. Add a location to an activity, booking or idea — or locate your destination.</span><button type="button" class="btn btn-primary btn-sm" data-map-locate>${icon("pin")} Locate trip</button>`;
+      note.innerHTML = `${icon("pin")}<span>Aún no hay lugares fijados. Añade una ubicación a una actividad, reserva o idea — o localiza tu destino.</span><button type="button" class="btn btn-primary btn-sm" data-map-locate>${icon("pin")} Localizar el destino</button>`;
       wrap.appendChild(note);
       note.querySelector("[data-map-locate]")?.addEventListener("click", options.onLocate);
     }

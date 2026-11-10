@@ -9,6 +9,7 @@ import {
   ACTIVITY_CATEGORIES,
   TASK_CATEGORIES,
   BOOKING_TYPES,
+  BOOKING_FALLBACK,
   RECOMMENDATION_CATEGORIES,
   TRANSPORT_SCOPES,
   TRANSPORT_TYPES,
@@ -87,13 +88,13 @@ export function checkboxField({ label, name, checked = false }) {
 }
 
 export function placeFieldHTML({
-  label = "Location",
+  label = "Ubicación",
   name = "location",
   value = "",
   lat = "",
   lng = "",
-  placeholder = "City, hotel, address…",
-  hint = "Press Find to pin it on the map.",
+  placeholder = "Ciudad, hotel, dirección…",
+  hint = "Pulsa Buscar para fijarlo en el mapa.",
 }) {
   const pinned =
     lat !== "" && lat !== null && lat !== undefined && lng !== "" && lng !== null && lng !== undefined;
@@ -104,13 +105,13 @@ export function placeFieldHTML({
         <div class="place-search-row">
           <input id="f-${esc(name)}" type="text" name="${esc(name)}" data-place-input
             value="${esc(value ?? "")}" placeholder="${esc(placeholder)}" autocomplete="off">
-          <button type="button" class="btn btn-soft btn-sm" data-place-search>${icon("search")} Find</button>
+          <button type="button" class="btn btn-soft btn-sm" data-place-search>${icon("search")} Buscar</button>
         </div>
         <input type="hidden" name="lat" data-place-lat value="${esc(lat ?? "")}">
         <input type="hidden" name="lng" data-place-lng value="${esc(lng ?? "")}">
         <div class="place-results" data-place-results hidden></div>
         <div class="place-selected ${pinned ? "" : "none"}" data-place-selected>
-          ${pinned ? `${icon("pin")} Pinned on the map` : hint}
+          ${pinned ? `${icon("pin")} Fijado en el mapa` : hint}
         </div>
       </div>
     </div>`;
@@ -131,18 +132,18 @@ export function wirePlacePickers(root) {
       lngInput.value = lng ?? "";
       const pinned = lat !== null && lat !== undefined && lng !== null && lng !== undefined;
       selected.classList.toggle("none", !pinned);
-      selected.innerHTML = pinned ? `${icon("pin")} Pinned on the map` : "Press Find to pin it on the map.";
+      selected.innerHTML = pinned ? `${icon("pin")} Fijado en el mapa` : "Pulsa Buscar para fijarlo en el mapa.";
     };
 
     const runSearch = async () => {
       const query = input.value.trim();
       if (!query) {
-        toast("Type a place to search first.", "error");
+        toast("Escribe primero un lugar para buscar.", "error");
         return;
       }
       const original = searchBtn.innerHTML;
       searchBtn.disabled = true;
-      searchBtn.textContent = "Searching…";
+      searchBtn.textContent = "Buscando…";
       try {
         const data = await api.geocode(query);
         items = data.results || [];
@@ -154,9 +155,9 @@ export function wirePlacePickers(root) {
                   `<button type="button" class="place-result" data-result-index="${index}">${esc(item.name)}</button>`,
               )
               .join("")
-          : `<div class="place-result">No places found. You can still save the location as text.</div>`;
+          : `<div class="place-result">No se encontraron lugares. Aún puedes guardar la ubicación como texto.</div>`;
       } catch (error) {
-        toast(error.message || "Search failed.", "error");
+        toast(error.message || "Error al buscar.", "error");
       } finally {
         searchBtn.disabled = false;
         searchBtn.innerHTML = original;
@@ -190,15 +191,15 @@ export function wirePlacePickers(root) {
   });
 }
 
-export function fileFieldHTML({ label = "Attach a document", accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*" } = {}) {
+export function fileFieldHTML({ label = "Adjuntar un documento", accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*" } = {}) {
   return `
     <div class="field full">
       <label>${esc(label)}</label>
       <label class="file-drop">
         ${icon("upload")}
         <div class="file-drop-main">
-          <div class="file-drop-title">Choose a file</div>
-          <div class="file-drop-name" data-file-name>PDF, image or spreadsheet · up to 30 MB</div>
+          <div class="file-drop-title">Elegir un archivo</div>
+          <div class="file-drop-name" data-file-name>PDF, imagen u hoja de cálculo · hasta 30 MB</div>
         </div>
         <input type="file" name="file" data-file-input accept="${esc(accept)}">
       </label>
@@ -210,7 +211,7 @@ export function wireFileField(root) {
   const label = root.querySelector("[data-file-name]");
   input?.addEventListener("change", () => {
     const file = input.files?.[0];
-    if (label) label.textContent = file ? file.name : "PDF, image or spreadsheet · up to 30 MB";
+    if (label) label.textContent = file ? file.name : "PDF, imagen u hoja de cálculo · hasta 30 MB";
   });
 }
 
@@ -228,14 +229,14 @@ function imageFieldHTML({ label, kind, trip = null, hint = "" }) {
           <label class="file-drop">
             ${icon("upload")}
             <div class="file-drop-main">
-              <div class="file-drop-title">Choose an image</div>
-              <div class="file-drop-name" data-image-name>${existing ? "Current image — choose a new one to replace it" : "PNG, JPG, WebP, GIF or AVIF · up to 30 MB"}</div>
+              <div class="file-drop-title">Elegir una imagen</div>
+              <div class="file-drop-name" data-image-name>${existing ? "Imagen actual — elige otra para reemplazarla" : "PNG, JPG, WebP, GIF o AVIF · hasta 30 MB"}</div>
             </div>
             <input type="file" data-image-input="${esc(kind)}" accept="image/png,image/jpeg,image/webp,image/gif,image/avif">
           </label>
           ${
             existing
-              ? `<label class="check-field image-remove"><input type="checkbox" name="remove_${esc(kind)}"> Remove current image</label>`
+              ? `<label class="check-field image-remove"><input type="checkbox" name="remove_${esc(kind)}"> Quitar la imagen actual</label>`
               : ""
           }
         </div>
@@ -270,6 +271,143 @@ function fd(fdObj, key) {
 }
 
 /* --------------------------------------------------------------------------
+   Comparison table editor (ideas shown as tables, like a spreadsheet)
+   -------------------------------------------------------------------------- */
+
+const DEFAULT_TABLE_COLUMNS = ["Opción", "Precio", "Notas"];
+
+function tableEditorHTML(rec) {
+  const isTable = rec?.kind === "table";
+  const columns =
+    isTable && Array.isArray(rec.table_columns) && rec.table_columns.length
+      ? rec.table_columns
+      : [...DEFAULT_TABLE_COLUMNS];
+  const rows =
+    isTable && Array.isArray(rec.table_rows) && rec.table_rows.length
+      ? rec.table_rows.map((cells) => cells.map((cell) => String(cell ?? "")))
+      : [["", "", ""]];
+  return `
+    <div class="field full" data-table-editor>
+      <label>Comparación</label>
+      <div class="table-editor" data-table-grid>
+        <div class="table-scroll">
+          <table>
+            <thead><tr data-te-head-row></tr></thead>
+            <tbody data-te-body></tbody>
+          </table>
+        </div>
+        <div class="table-editor-actions">
+          <button type="button" class="btn btn-soft btn-sm" data-te-add-row>${icon("plus")} Añadir fila</button>
+          <button type="button" class="btn btn-soft btn-sm" data-te-add-col>${icon("plus")} Añadir columna</button>
+        </div>
+        <span class="field-hint">Usa la primera columna para el nombre de cada opción (p. ej. cada hotel o seguro) y una fila por opción.</span>
+      </div>
+    </div>`;
+}
+
+function wireTableEditor(root) {
+  root.querySelectorAll("[data-table-grid]").forEach((grid) => {
+    const headRow = grid.querySelector("[data-te-head-row]");
+    const body = grid.querySelector("[data-te-body]");
+    let columns = [];
+    let rows = [];
+
+    const collect = () => {
+      columns = Array.from(headRow.querySelectorAll("[data-te-col]")).map((input) => input.value);
+      rows = Array.from(body.querySelectorAll("tr")).map((tr) =>
+        Array.from(tr.querySelectorAll("[data-te-cell]")).map((input) => input.value),
+      );
+    };
+
+    const render = () => {
+      headRow.innerHTML = columns
+        .map((column, index) => {
+          return `
+          <th>
+            <span class="te-col-wrap">
+              <input type="text" data-te-col value="${esc(column)}" placeholder="Columna ${index + 1}"
+                aria-label="Nombre de la columna ${index + 1}">
+              <button type="button" class="icon-btn danger te-col-del" data-te-del-col="${index}"
+                title="Eliminar columna" aria-label="Eliminar columna">${icon("x")}</button>
+            </span>
+          </th>`;
+        })
+        .join("");
+      body.innerHTML = rows.length
+        ? rows
+            .map(
+              (cells, index) => `
+          <tr>
+            ${columns
+              .map(
+                (_, c) =>
+                  `<td><input type="text" data-te-cell value="${esc(cells[c] ?? "")}" aria-label="Celda"></td>`,
+              )
+              .join("")}
+            <td class="te-row-del">
+              <button type="button" class="icon-btn danger" data-te-del-row="${index}"
+                title="Eliminar fila" aria-label="Eliminar fila">${icon("x")}</button>
+            </td>
+          </tr>`,
+            )
+            .join("")
+        : `<tr class="te-empty-row"><td class="te-empty-cell" colspan="${columns.length + 1}">Sin filas todavía — pulsa «Añadir fila».</td></tr>`;
+    };
+
+    grid.addEventListener("click", (event) => {
+      const addRow = event.target.closest("[data-te-add-row]");
+      if (addRow) {
+        collect();
+        rows.push(Array(columns.length).fill(""));
+        render();
+        body.querySelector(`tr:last-child [data-te-cell]`)?.focus();
+        return;
+      }
+      const addCol = event.target.closest("[data-te-add-col]");
+      if (addCol) {
+        collect();
+        columns.push("");
+        rows = rows.map((cells) => [...cells, ""]);
+        render();
+        headRow.querySelector(`[data-te-col]:last-child`)?.focus();
+        return;
+      }
+      const delCol = event.target.closest("[data-te-del-col]");
+      if (delCol) {
+        collect();
+        const index = Number(delCol.dataset.teDelCol);
+        if (columns.length <= 1) {
+          toast("Debe quedar al menos una columna.", "error");
+          return;
+        }
+        columns.splice(index, 1);
+        rows = rows.map((cells) => cells.filter((_, c) => c !== index));
+        render();
+        return;
+      }
+      const delRow = event.target.closest("[data-te-del-row]");
+      if (delRow) {
+        collect();
+        rows.splice(Number(delRow.dataset.teDelRow), 1);
+        render();
+      }
+    });
+
+    render();
+  });
+}
+
+function readTableEditor(form) {
+  const grid = form.querySelector("[data-table-grid]");
+  if (!grid) return { columns: [], rows: [] };
+  const columns = Array.from(grid.querySelectorAll("[data-te-col]")).map((input) => input.value.trim());
+  const rows = Array.from(grid.querySelectorAll("[data-te-body] tr"))
+    .filter((tr) => !tr.classList.contains("te-empty-row"))
+    .map((tr) => Array.from(tr.querySelectorAll("[data-te-cell]")).map((input) => input.value.trim()));
+  return { columns, rows };
+}
+
+/* --------------------------------------------------------------------------
    Trip
    -------------------------------------------------------------------------- */
 
@@ -278,65 +416,65 @@ export function openTripModal({ trip = null, onSaved = null } = {}) {
   const body = `
     <div class="form-grid">
       ${placeFieldHTML({
-        label: "Destination",
+        label: "Destino",
         name: "location",
         value: trip?.location || "",
         lat: trip?.lat ?? "",
         lng: trip?.lng ?? "",
-        placeholder: "e.g. Lisbon, Portugal",
+        placeholder: "p. ej. Lisboa, Portugal",
       })}
       ${inputField({
-        label: "Trip name",
+        label: "Nombre del viaje",
         name: "title",
         value: trip?.title || "",
-        placeholder: trip?.location ? `Trip to ${trip.location}` : "Leave empty to auto-name it",
+        placeholder: trip?.location ? `Viaje a ${trip.location}` : "Déjalo vacío para nombrarlo automáticamente",
         full: true,
       })}
-      ${inputField({ label: "Start date", name: "start_date", type: "date", value: trip?.start_date || "" })}
-      ${inputField({ label: "End date", name: "end_date", type: "date", value: trip?.end_date || "" })}
+      ${inputField({ label: "Fecha de inicio", name: "start_date", type: "date", value: trip?.start_date || "" })}
+      ${inputField({ label: "Fecha de fin", name: "end_date", type: "date", value: trip?.end_date || "" })}
       ${inputField({
-        label: "Duration (days)",
+        label: "Duración (días)",
         name: "duration_days",
         type: "number",
         value: trip?.day_count ?? "",
-        placeholder: "e.g. 7",
+        placeholder: "p. ej. 7",
         min: 1,
         max: 365,
-        hint: editing ? "Used only when creating days." : "Used only if no end date is set.",
+        hint: editing ? "Solo se usa al crear los días." : "Solo se usa si no hay fecha de fin.",
       })}
       ${textareaField({
-        label: "Description",
+        label: "Descripción",
         name: "description",
         value: trip?.description || "",
-        placeholder: "What is this trip about? Anything you want to remember.",
+        placeholder: "¿De qué va este viaje? Cualquier cosa que quieras recordar.",
         rows: 3,
       })}
       ${imageFieldHTML({
-        label: "Trip icon (small picture)",
+        label: "Icono del viaje (imagen pequeña)",
         kind: "icon",
         trip,
-        hint: "Shown next to the trip name in the sidebar.",
+        hint: "Se muestra junto al nombre del viaje en la barra lateral.",
       })}
       ${imageFieldHTML({
-        label: "Header cover image",
+        label: "Imagen de cabecera",
         kind: "cover",
         trip,
-        hint: "Shown as the wide banner at the top of this trip.",
+        hint: "Se muestra como el banner ancho de la parte superior del viaje.",
       })}
       ${
         editing
-          ? `<p class="field-hint" style="grid-column:1/-1">Changing dates here does not regenerate itinerary days. Add or remove days from the Itinerary tab.</p>`
+          ? `<p class="field-hint" style="grid-column:1/-1">Cambiar las fechas aquí no regenera los días del itinerario. Añade o quita días en la pestaña Itinerario.</p>`
           : ""
       }
     </div>`;
 
   openModal({
-    title: editing ? "Edit trip" : "Plan a new trip",
+    title: editing ? "Editar viaje" : "Planificar un viaje nuevo",
     subtitle: editing
-      ? "Update the destination, dates and the images for this trip."
-      : "Give it a name and a destination — we'll create a page for every day.",
+      ? "Actualiza el destino, las fechas y las imágenes de este viaje."
+      : "Dale un nombre y un destino — crearemos una página para cada día.",
     body,
-    submitLabel: editing ? "Save changes" : "Create trip",
+    submitLabel: editing ? "Guardar cambios" : "Crear viaje",
     size: "lg",
     onMount: ({ form }) => {
       wirePlacePickers(form);
@@ -359,7 +497,7 @@ export function openTripModal({ trip = null, onSaved = null } = {}) {
       const data = new FormData(form);
       const location = fd(data, "location");
       if (!location) {
-        toast("Please add a destination.", "error");
+        toast("Añade un destino.", "error");
         return false;
       }
       const files = {
@@ -390,11 +528,14 @@ export function openTripModal({ trip = null, onSaved = null } = {}) {
           }
         } catch (error) {
           imageError = true;
-          toast(`Trip saved, but the ${kind} image could not be updated: ${error.message}`, "error");
+          toast(
+            `Viaje guardado, pero no se pudo actualizar la imagen ${kind === "icon" ? "del icono" : "de cabecera"}: ${error.message}`,
+            "error",
+          );
         }
       }
       if (!imageError) {
-        toast(editing ? "Trip updated." : "Trip created. Your itinerary is ready.");
+        toast(editing ? "Viaje actualizado." : "Viaje creado. Tu itinerario está listo.");
       }
       await onSaved?.(saved);
     },
@@ -410,26 +551,26 @@ export function openDayModal({ trip, day = null, onSaved = null } = {}) {
   const body = `
     <div class="form-grid">
       ${inputField({
-        label: "Day title",
+        label: "Título del día",
         name: "title",
         value: day?.title || "",
-        placeholder: "e.g. Old town & sunset at the river",
+        placeholder: "p. ej. Casco antiguo y atardecer junto al río",
         full: true,
       })}
-      ${inputField({ label: "Date", name: "date", type: "date", value: day?.date || "" })}
+      ${inputField({ label: "Fecha", name: "date", type: "date", value: day?.date || "" })}
       ${textareaField({
-        label: "Notes for the day",
+        label: "Notas del día",
         name: "notes",
         value: day?.notes || "",
-        placeholder: "Ideas, reminders, opening hours…",
+        placeholder: "Ideas, recordatorios, horarios…",
       })}
     </div>`;
 
   openModal({
-    title: editing ? "Edit day" : "Add a day",
-    subtitle: editing ? `Day ${day.day_number} of ${trip.title}` : "Add an extra day to your itinerary.",
+    title: editing ? "Editar día" : "Añadir un día",
+    subtitle: editing ? `Día ${day.day_number} de ${trip.title}` : "Añade un día extra a tu itinerario.",
     body,
-    submitLabel: editing ? "Save day" : "Add day",
+    submitLabel: editing ? "Guardar día" : "Añadir día",
     onSubmit: async (form) => {
       const data = new FormData(form);
       const payload = {
@@ -439,10 +580,10 @@ export function openDayModal({ trip, day = null, onSaved = null } = {}) {
       };
       if (editing) {
         await api.updateDay(day.id, payload);
-        toast("Day updated.");
+        toast("Día actualizado.");
       } else {
         await api.createDay(trip.id, payload);
-        toast("Day added.");
+        toast("Día añadido.");
       }
       await onSaved?.();
     },
@@ -458,49 +599,49 @@ export function openActivityModal({ trip, day, activity = null, onSaved = null }
   const body = `
     <div class="form-grid">
       ${inputField({
-        label: "What are you doing?",
+        label: "¿Qué vas a hacer?",
         name: "title",
         value: activity?.title || "",
-        placeholder: "e.g. Visit the Belém Tower",
+        placeholder: "p. ej. Visitar la Torre de Belém",
         required: true,
         full: true,
       })}
-      ${inputField({ label: "Time", name: "time", type: "time", value: activity?.time || "" })}
+      ${inputField({ label: "Hora", name: "time", type: "time", value: activity?.time || "" })}
       ${selectField({
-        label: "Category",
+        label: "Categoría",
         name: "category",
         value: activity?.category || "sightseeing",
         options: ACTIVITY_CATEGORIES,
       })}
       ${placeFieldHTML({
-        label: "Location",
+        label: "Ubicación",
         name: "location",
         value: activity?.location || "",
         lat: activity?.lat ?? "",
         lng: activity?.lng ?? "",
-        placeholder: "Address or place name",
+        placeholder: "Dirección o nombre del lugar",
       })}
       ${textareaField({
-        label: "Notes",
+        label: "Notas",
         name: "notes",
         value: activity?.notes || "",
-        placeholder: "Tickets, opening hours, reservation number…",
+        placeholder: "Entradas, horarios, número de reserva…",
       })}
-      ${checkboxField({ label: "Mark as done", name: "done", checked: Boolean(activity?.done) })}
+      ${checkboxField({ label: "Marcar como hecha", name: "done", checked: Boolean(activity?.done) })}
     </div>`;
 
   openModal({
-    title: editing ? "Edit activity" : "Add activity",
-    subtitle: `${day.title || `Day ${day.day_number}`}${day.date ? ` · ${day.date}` : ""}`,
+    title: editing ? "Editar actividad" : "Añadir actividad",
+    subtitle: `${day.title || `Día ${day.day_number}`}${day.date ? ` · ${day.date}` : ""}`,
     body,
-    submitLabel: editing ? "Save activity" : "Add activity",
+    submitLabel: editing ? "Guardar actividad" : "Añadir actividad",
     size: "lg",
     onMount: ({ form }) => wirePlacePickers(form),
     onSubmit: async (form) => {
       const data = new FormData(form);
       const title = fd(data, "title");
       if (!title) {
-        toast("Give the activity a title.", "error");
+        toast("Da un título a la actividad.", "error");
         return false;
       }
       const payload = {
@@ -515,10 +656,10 @@ export function openActivityModal({ trip, day, activity = null, onSaved = null }
       };
       if (editing) {
         await api.updateActivity(activity.id, payload);
-        toast("Activity updated.");
+        toast("Actividad actualizada.");
       } else {
         await api.createActivity(day.id, payload);
-        toast("Activity added.");
+        toast("Actividad añadida.");
       }
       await onSaved?.();
     },
@@ -534,39 +675,39 @@ export function openTaskModal({ trip, task = null, status = "todo", onSaved = nu
   const body = `
     <div class="form-grid">
       ${inputField({
-        label: "Task",
+        label: "Tarea",
         name: "title",
         value: task?.title || "",
-        placeholder: "e.g. Book the hotel in Alfama",
+        placeholder: "p. ej. Reservar el hotel en Alfama",
         required: true,
         full: true,
       })}
-      ${selectField({ label: "Category", name: "category", value: task?.category || "booking", options: TASK_CATEGORIES })}
+      ${selectField({ label: "Categoría", name: "category", value: task?.category || "booking", options: TASK_CATEGORIES })}
       ${selectField({
-        label: "Status",
+        label: "Estado",
         name: "status",
         value: task?.status || status,
-        options: { todo: "To do", doing: "In progress", done: "Done" },
+        options: { todo: "Pendiente", doing: "En curso", done: "Hecha" },
       })}
-      ${inputField({ label: "Due date", name: "due_date", type: "date", value: task?.due_date || "" })}
+      ${inputField({ label: "Fecha límite", name: "due_date", type: "date", value: task?.due_date || "" })}
       ${textareaField({
-        label: "Notes",
+        label: "Notas",
         name: "notes",
         value: task?.notes || "",
-        placeholder: "Links, references, who is handling it…",
+        placeholder: "Enlaces, referencias, quién se encarga…",
       })}
     </div>`;
 
   openModal({
-    title: editing ? "Edit task" : "Add task",
-    subtitle: "Keep the planning moving — one small step at a time.",
+    title: editing ? "Editar tarea" : "Añadir tarea",
+    subtitle: "Mantén la planificación en marcha — paso a paso.",
     body,
-    submitLabel: editing ? "Save task" : "Add task",
+    submitLabel: editing ? "Guardar tarea" : "Añadir tarea",
     onSubmit: async (form) => {
       const data = new FormData(form);
       const title = fd(data, "title");
       if (!title) {
-        toast("Give the task a title.", "error");
+        toast("Da un título a la tarea.", "error");
         return false;
       }
       const payload = {
@@ -578,10 +719,10 @@ export function openTaskModal({ trip, task = null, status = "todo", onSaved = nu
       };
       if (editing) {
         await api.updateTask(task.id, payload);
-        toast("Task updated.");
+        toast("Tarea actualizada.");
       } else {
         await api.createTask(trip.id, payload);
-        toast("Task added.");
+        toast("Tarea añadida.");
       }
       await onSaved?.();
     },
@@ -594,49 +735,53 @@ export function openTaskModal({ trip, task = null, status = "todo", onSaved = nu
 
 export function openBookingModal({ trip, booking = null, onSaved = null } = {}) {
   const editing = Boolean(booking);
+  // Bookings created before the type list was reduced still keep their type
+  // when opened, so saving an edit does not silently rewrite it to "hotel".
+  const legacyType = editing && booking.type && !BOOKING_TYPES[booking.type];
+  const typeOptions = legacyType ? { ...BOOKING_TYPES, [booking.type]: BOOKING_FALLBACK } : BOOKING_TYPES;
   const body = `
     <div class="form-grid">
-      ${selectField({ label: "Type", name: "type", value: booking?.type || "hotel", options: BOOKING_TYPES })}
+      ${selectField({ label: "Tipo", name: "type", value: booking?.type || "hotel", options: typeOptions })}
       ${inputField({
-        label: "Title",
+        label: "Título",
         name: "title",
         value: booking?.title || "",
-        placeholder: "e.g. Hotel Alfama — 3 nights",
+        placeholder: "p. ej. Hotel Alfama — 3 noches",
         required: true,
       })}
-      ${inputField({ label: "Provider / company", name: "provider", value: booking?.provider || "", placeholder: "Booking.com, TAP, …" })}
+      ${inputField({ label: "Proveedor / empresa", name: "provider", value: booking?.provider || "", placeholder: "Booking.com, Air Europa, …" })}
       ${inputField({
-        label: "Confirmation code",
+        label: "Código de confirmación",
         name: "confirmation",
         value: booking?.confirmation || "",
-        placeholder: "Reference number",
+        placeholder: "Número de referencia",
       })}
-      ${inputField({ label: "Check-in / start", name: "start_date", type: "date", value: booking?.start_date || "" })}
-      ${inputField({ label: "Check-out / end", name: "end_date", type: "date", value: booking?.end_date || "" })}
-      ${inputField({ label: "Amount", name: "amount", type: "number", value: booking?.amount ?? "", placeholder: "0.00", min: 0, step: "0.01" })}
-      ${inputField({ label: "Currency", name: "currency", value: booking?.currency || "EUR", placeholder: "EUR" })}
+      ${inputField({ label: "Entrada", name: "start_date", type: "date", value: booking?.start_date || "" })}
+      ${inputField({ label: "Salida", name: "end_date", type: "date", value: booking?.end_date || "" })}
+      ${inputField({ label: "Importe", name: "amount", type: "number", value: booking?.amount ?? "", placeholder: "0,00", min: 0, step: "0.01" })}
+      ${inputField({ label: "Moneda", name: "currency", value: booking?.currency || "EUR", placeholder: "EUR" })}
       ${placeFieldHTML({
-        label: "Address",
+        label: "Dirección",
         name: "address",
         value: booking?.address || "",
         lat: booking?.lat ?? "",
         lng: booking?.lng ?? "",
-        placeholder: "Hotel address, airport, station…",
+        placeholder: "Dirección del hotel, estación, punto de encuentro…",
       })}
       ${textareaField({
-        label: "Notes",
+        label: "Notas",
         name: "notes",
         value: booking?.notes || "",
-        placeholder: "Room type, cancellation policy, breakfast included…",
+        placeholder: "Tipo de habitación, política de cancelación, desayuno incluido…",
       })}
-      ${fileFieldHTML({ label: editing ? "Attach another document" : "Attach a PDF or document" })}
+      ${fileFieldHTML({ label: editing ? "Adjuntar otro documento" : "Adjuntar un PDF o documento" })}
     </div>`;
 
   openModal({
-    title: editing ? "Edit booking" : "Add a booking",
-    subtitle: "Hotels, flights, trains, visas, insurance — keep the paperwork together.",
+    title: editing ? "Editar reserva" : "Añadir una reserva",
+    subtitle: "Alojamientos y viajes o excursiones — ten el papeleo junto.",
     body,
-    submitLabel: editing ? "Save booking" : "Add booking",
+    submitLabel: editing ? "Guardar reserva" : "Añadir reserva",
     size: "lg",
     onMount: ({ form }) => {
       wirePlacePickers(form);
@@ -646,7 +791,7 @@ export function openBookingModal({ trip, booking = null, onSaved = null } = {}) 
       const data = new FormData(form);
       const title = fd(data, "title");
       if (!title) {
-        toast("Give the booking a title.", "error");
+        toast("Da un título a la reserva.", "error");
         return false;
       }
       const payload = {
@@ -666,16 +811,16 @@ export function openBookingModal({ trip, booking = null, onSaved = null } = {}) 
       let saved;
       if (editing) {
         saved = (await api.updateBooking(booking.id, payload)).booking;
-        toast("Booking updated.");
+        toast("Reserva actualizada.");
       } else {
         saved = (await api.createBooking(trip.id, payload)).booking;
-        toast("Booking added.");
+        toast("Reserva añadida.");
       }
       const fileInput = form.querySelector("[data-file-input]");
       const file = fileInput?.files?.[0];
       if (file) {
         await api.uploadDocument(trip.id, file, saved.id);
-        toast(`“${file.name}” attached to the booking.`);
+        toast(`“${file.name}” adjuntado a la reserva.`);
       }
       await onSaved?.(saved);
     },
@@ -691,107 +836,109 @@ export function openTransportModal({ trip, transport = null, onSaved = null } = 
   const body = `
     <div class="form-grid">
       ${selectField({
-        label: "Leg",
+        label: "Tramo",
         name: "scope",
         value: transport?.scope || "arrival",
         options: TRANSPORT_SCOPES,
       })}
       ${selectField({
-        label: "Mode",
+        label: "Medio",
         name: "type",
         value: transport?.type || "flight",
         options: TRANSPORT_TYPES,
       })}
       ${inputField({
-        label: "Title",
+        label: "Título",
         name: "title",
         value: transport?.title || "",
-        placeholder: "e.g. Flight to Lisbon",
+        placeholder: "p. ej. Vuelo a Nueva York",
         required: true,
         full: true,
       })}
       ${inputField({
-        label: "Provider / company",
+        label: "Proveedor / empresa",
         name: "provider",
         value: transport?.provider || "",
-        placeholder: "TAP, Renfe, Flixbus…",
+        placeholder: "Iberia, Renfe, Flixbus…",
       })}
       ${inputField({
-        label: "Confirmation code",
+        label: "Código de confirmación",
         name: "confirmation",
         value: transport?.confirmation || "",
-        placeholder: "Reference number",
+        placeholder: "Número de referencia",
       })}
       ${inputField({
-        label: "From",
+        label: "Origen",
         name: "from_place",
         value: transport?.from_place || "",
-        placeholder: "City, airport or station",
+        placeholder: "Ciudad, aeropuerto o estación",
       })}
       ${inputField({
-        label: "To",
+        label: "Destino",
         name: "to_place",
         value: transport?.to_place || "",
-        placeholder: "City, airport or station",
+        placeholder: "Ciudad, aeropuerto o estación",
       })}
       ${inputField({
-        label: "Departure date",
+        label: "Fecha de salida",
         name: "depart_date",
         type: "date",
         value: transport?.depart_date || "",
       })}
       ${inputField({
-        label: "Departure time",
+        label: "Hora de salida",
         name: "depart_time",
         type: "time",
         value: transport?.depart_time || "",
       })}
       ${inputField({
-        label: "Arrival date",
+        label: "Fecha de llegada",
         name: "arrive_date",
         type: "date",
         value: transport?.arrive_date || "",
       })}
       ${inputField({
-        label: "Arrival time",
+        label: "Hora de llegada",
         name: "arrive_time",
         type: "time",
         value: transport?.arrive_time || "",
       })}
       ${inputField({
-        label: "Amount",
+        label: "Importe",
         name: "amount",
         type: "number",
         value: transport?.amount ?? "",
-        placeholder: "0.00",
+        placeholder: "0,00",
         min: 0,
         step: "0.01",
       })}
       ${inputField({
-        label: "Currency",
+        label: "Moneda",
         name: "currency",
         value: transport?.currency || "EUR",
         placeholder: "EUR",
       })}
       ${textareaField({
-        label: "Notes",
+        label: "Notas",
         name: "notes",
         value: transport?.notes || "",
-        placeholder: "Seat, platform, baggage, connection details…",
+        placeholder: "Asiento, andén, equipaje, conexiones…",
       })}
+      ${fileFieldHTML({ label: "Adjuntar un documento (billete, PDF…)" })}
     </div>`;
 
   openModal({
-    title: editing ? "Edit transport" : "Add transport",
-    subtitle: "The journey to your destination and the legs in between.",
+    title: editing ? "Editar transporte" : "Añadir transporte",
+    subtitle: "El viaje hasta tu destino y los trayectos intermedios.",
     body,
-    submitLabel: editing ? "Save transport" : "Add transport",
+    submitLabel: editing ? "Guardar transporte" : "Añadir transporte",
     size: "lg",
+    onMount: ({ form }) => wireFileField(form),
     onSubmit: async (form) => {
       const data = new FormData(form);
       const title = fd(data, "title");
       if (!title) {
-        toast("Give this transport a title.", "error");
+        toast("Da un título a este transporte.", "error");
         return false;
       }
       const payload = {
@@ -810,92 +957,153 @@ export function openTransportModal({ trip, transport = null, onSaved = null } = 
         currency: fd(data, "currency") || "EUR",
         notes: fd(data, "notes"),
       };
+      let saved;
       if (editing) {
-        await api.updateTransport(transport.id, payload);
-        toast("Transport updated.");
+        saved = (await api.updateTransport(transport.id, payload)).transport;
+        toast("Transporte actualizado.");
       } else {
-        await api.createTransport(trip.id, payload);
-        toast("Transport added.");
+        saved = (await api.createTransport(trip.id, payload)).transport;
+        toast("Transporte añadido.");
       }
-      await onSaved?.();
+      const fileInput = form.querySelector("[data-file-input]");
+      const file = fileInput?.files?.[0];
+      if (file) {
+        await api.uploadDocument(trip.id, file, null, saved.id);
+        toast(`“${file.name}” añadido a los documentos del viaje.`);
+      }
+      await onSaved?.(saved);
     },
   });
 }
 
 /* --------------------------------------------------------------------------
-   Recommendation
+   Recommendation (idea or comparison table)
    -------------------------------------------------------------------------- */
 
-export function openRecommendationModal({ trip, recommendation = null, onSaved = null } = {}) {
+export function openRecommendationModal({ trip, recommendation = null, mode = "idea", onSaved = null } = {}) {
   const editing = Boolean(recommendation);
+  const initialMode = recommendation?.kind === "table" || (!editing && mode === "table") ? "table" : "idea";
+  const isTable = initialMode === "table";
   const body = `
     <div class="form-grid">
+      ${selectField({
+        label: "Tipo de entrada",
+        name: "mode",
+        value: initialMode,
+        options: { idea: "Idea", table: "Tabla comparativa" },
+        hint: "Las tablas sirven para comparar opciones (seguros, hoteles, viajes…) como en una hoja de cálculo.",
+      })}
       ${inputField({
-        label: "Name",
+        label: isTable ? "Nombre de la tabla" : "Nombre",
         name: "title",
         value: recommendation?.title || "",
-        placeholder: "e.g. Time Out Market",
+        placeholder: isTable ? "p. ej. Comparativa de seguros de viaje" : "p. ej. Time Out Market",
         required: true,
         full: true,
       })}
       ${selectField({
-        label: "Category",
+        label: "Categoría",
         name: "category",
         value: recommendation?.category || "place",
         options: RECOMMENDATION_CATEGORIES,
       })}
       ${inputField({
-        label: "Link",
+        label: "Enlace",
         name: "url",
         type: "url",
         value: recommendation?.url || "",
         placeholder: "https://…",
       })}
-      ${placeFieldHTML({
-        label: "Address",
-        name: "address",
-        value: recommendation?.address || "",
-        lat: recommendation?.lat ?? "",
-        lng: recommendation?.lng ?? "",
-        placeholder: "Where is it?",
-      })}
+      <div class="mode-fields ${isTable ? "mode-hidden" : ""}" data-mode-fields="idea">
+        ${placeFieldHTML({
+          label: "Dirección",
+          name: "address",
+          value: recommendation?.address || "",
+          lat: recommendation?.lat ?? "",
+          lng: recommendation?.lng ?? "",
+          placeholder: "¿Dónde está?",
+        })}
+      </div>
       ${textareaField({
-        label: "Notes / why it's worth it",
+        label: "Notas",
         name: "notes",
         value: recommendation?.notes || "",
-        placeholder: "What to order, best time to go, who recommended it…",
+        placeholder: isTable ? "Conclusiones, a quién preguntar, en qué te basas…" : "Qué pedir, cuándo ir, quién lo recomendó…",
       })}
+      <div class="mode-fields ${isTable ? "" : "mode-hidden"}" data-mode-fields="table">
+        ${tableEditorHTML(recommendation)}
+      </div>
     </div>`;
 
   openModal({
-    title: editing ? "Edit idea" : "Save an idea",
-    subtitle: "Places, restaurants and experiences you don't want to forget.",
+    title: editing ? (isTable ? "Editar tabla" : "Editar idea") : "Guardar una idea",
+    subtitle: isTable
+      ? "Compara opciones en una tabla, fila por fila, como en una hoja de cálculo."
+      : "Lugares, restaurantes y experiencias que no quieres olvidar.",
     body,
-    submitLabel: editing ? "Save idea" : "Save idea",
+    submitLabel: isTable ? "Guardar tabla" : "Guardar idea",
     size: "lg",
-    onMount: ({ form }) => wirePlacePickers(form),
+    onMount: ({ form }) => {
+      wirePlacePickers(form);
+      wireTableEditor(form);
+      const titleInput = form.querySelector('[name="title"]');
+      const notesInput = form.querySelector('[name="notes"]');
+      const modeSelect = form.querySelector('[name="mode"]');
+      modeSelect?.addEventListener("change", () => {
+        const table = modeSelect.value === "table";
+        form.querySelector('[data-mode-fields="idea"]')?.classList.toggle("mode-hidden", table);
+        form.querySelector('[data-mode-fields="table"]')?.classList.toggle("mode-hidden", !table);
+        if (titleInput) {
+          const label = form.querySelector('label[for="f-title"]');
+          if (label) label.textContent = table ? "Nombre de la tabla *" : "Nombre *";
+          titleInput.placeholder = table
+            ? "p. ej. Comparativa de seguros de viaje"
+            : "p. ej. Time Out Market";
+        }
+        if (notesInput) {
+          notesInput.placeholder = table
+            ? "Conclusiones, a quién preguntar, en qué te basas…"
+            : "Qué pedir, cuándo ir, quién lo recomendó…";
+        }
+      });
+    },
     onSubmit: async (form) => {
       const data = new FormData(form);
+      const tableMode = fd(data, "mode") === "table";
       const title = fd(data, "title");
       if (!title) {
-        toast("Give the idea a name.", "error");
+        toast(tableMode ? "Da un nombre a la tabla." : "Da un nombre a la idea.", "error");
         return false;
       }
       const payload = {
         title,
         category: fd(data, "category") || "place",
         url: fd(data, "url"),
-        address: fd(data, "address"),
-        lat: fd(data, "lat"),
-        lng: fd(data, "lng"),
         notes: fd(data, "notes"),
+        kind: tableMode ? "table" : "idea",
       };
+      if (tableMode) {
+        const table = readTableEditor(form);
+        if (!table.columns.filter(Boolean).length) {
+          toast("Añade al menos una columna con nombre.", "error");
+          return false;
+        }
+        payload.table_columns = table.columns;
+        payload.table_rows = table.rows;
+        payload.address = "";
+        payload.lat = "";
+        payload.lng = "";
+      } else {
+        payload.address = fd(data, "address");
+        payload.lat = fd(data, "lat");
+        payload.lng = fd(data, "lng");
+      }
       if (editing) {
         await api.updateRecommendation(recommendation.id, payload);
-        toast("Idea updated.");
+        toast(tableMode ? "Tabla actualizada." : "Idea actualizada.");
       } else {
         await api.createRecommendation(trip.id, payload);
-        toast("Idea saved.");
+        toast(tableMode ? "Tabla guardada." : "Idea guardada.");
       }
       await onSaved?.();
     },

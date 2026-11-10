@@ -61,11 +61,16 @@ PORT=5055 .venv/bin/python app.py
 
 | What | Location |
 | --- | --- |
-| SQLite database | `data/wayfarer.db` |
+| Trip data (JSON) | `data/trips/<id>/trip.json` |
+| Readable trip snapshot (Markdown) | `data/trips/<id>/viaje.md` |
 | Uploaded files | `data/uploads/` |
+| Internal ID counters | `data/meta.json` |
+| One-time SQLite backup (after migration) | `data/backups/` |
 
-Both are created automatically on first run. Back up the `data/` folder to keep a
-copy of your trips, and delete it to start completely fresh.
+Everything is created automatically on first run. Back up the `data/` folder to
+keep a copy of your trips, and delete it to start completely fresh. If an old
+`data/wayfarer.db` is found, it is imported into JSON once and then moved to
+`data/backups/`.
 
 ## Notes on local use
 

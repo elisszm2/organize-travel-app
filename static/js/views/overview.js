@@ -40,7 +40,7 @@ function previewDay(day) {
       </span>`,
   );
   const extra = (day.activities || []).length - chips.length;
-  const weekday = day.date ? fmtWeekday(day.date).slice(0, 3) : "Day";
+  const weekday = day.date ? fmtWeekday(day.date).slice(0, 3) : "Día";
   return `
     <div class="preview-day" data-goto-day="${day.id}" role="button" tabindex="0">
       <div class="day-badge">
@@ -49,13 +49,13 @@ function previewDay(day) {
       </div>
       <div class="preview-day-main">
         <div class="preview-day-title">
-          ${esc(day.title || `Day ${day.day_number}`)}
+          ${esc(day.title || `Día ${day.day_number}`)}
           ${day.date ? `<span class="preview-day-date">${esc(fmtDate(day.date, "short"))}</span>` : ""}
         </div>
         <div class="preview-chips">
           ${chips.join("")}
-          ${extra > 0 ? `<span class="chip">+${extra} more</span>` : ""}
-          ${!chips.length ? `<span class="preview-empty">No activities planned yet</span>` : ""}
+          ${extra > 0 ? `<span class="chip">+${extra} más</span>` : ""}
+          ${!chips.length ? `<span class="preview-empty">Aún no hay actividades planificadas</span>` : ""}
         </div>
       </div>
       <span class="preview-day-arrow">${icon("chevron-right")}</span>
@@ -92,10 +92,10 @@ export function renderOverview(root, trip, ctx) {
 
   root.innerHTML = `
     <div class="stat-grid">
-      ${statCard({ iconName: "calendar", value: trip.day_count, label: "Itinerary days" })}
-      ${statCard({ iconName: "camera", tone: "teal", value: trip.activity_count, label: "Activities" })}
-      ${statCard({ iconName: "check-circle", tone: "gold", value: `${doneTasks}/${tasks.length}`, label: "Tasks completed" })}
-      ${statCard({ iconName: "file", tone: "plum", value: trip.doc_count, label: "Documents" })}
+      ${statCard({ iconName: "calendar", value: trip.day_count, label: "Días de itinerario" })}
+      ${statCard({ iconName: "camera", tone: "teal", value: trip.activity_count, label: "Actividades" })}
+      ${statCard({ iconName: "check-circle", tone: "gold", value: `${doneTasks}/${tasks.length}`, label: "Tareas completadas" })}
+      ${statCard({ iconName: "file", tone: "plum", value: trip.doc_count, label: "Documentos" })}
     </div>
 
     <div class="overview-grid">
@@ -103,10 +103,10 @@ export function renderOverview(root, trip, ctx) {
         <section class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("kanban")} Trip checklist</div>
-              <div class="card-subtitle">Drag cards between columns · ${tasks.length} task${tasks.length === 1 ? "" : "s"}</div>
+              <div class="card-title">${icon("kanban")} Lista de tareas del viaje</div>
+              <div class="card-subtitle">Arrastra las tarjetas entre columnas · ${tasks.length} tarea${tasks.length === 1 ? "" : "s"}</div>
             </div>
-            <button type="button" class="btn-link" data-goto="tasks">Open tasks ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="tasks">Ver tareas ${icon("arrow-right")}</button>
           </div>
           <div class="card-body">
             <div class="kanban">
@@ -118,10 +118,10 @@ export function renderOverview(root, trip, ctx) {
         <section class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("route")} Itinerary at a glance</div>
-              <div class="card-subtitle">${days.length} day${days.length === 1 ? "" : "s"} · ${Number(trip.activity_count) || 0} ${Number(trip.activity_count) === 1 ? "activity" : "activities"}</div>
+              <div class="card-title">${icon("route")} Itinerario de un vistazo</div>
+              <div class="card-subtitle">${days.length} día${days.length === 1 ? "" : "s"} · ${Number(trip.activity_count) || 0} ${Number(trip.activity_count) === 1 ? "actividad" : "actividades"}</div>
             </div>
-            <button type="button" class="btn-link" data-goto="itinerary">Open itinerary ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="itinerary">Abrir itinerario ${icon("arrow-right")}</button>
           </div>
           <div class="card-body" style="padding-top:8px">
             ${
@@ -129,12 +129,12 @@ export function renderOverview(root, trip, ctx) {
                 ? `<div class="preview-days">${previewDays.map(previewDay).join("")}</div>`
                 : `<div class="empty-state" style="padding:26px 16px">
                      <div class="empty-icon">${icon("calendar")}</div>
-                     <div class="empty-title">No days yet</div>
-                     <p class="empty-text">Add days to start shaping the journey.</p>
-                     <button type="button" class="btn btn-ghost btn-sm" data-goto="itinerary">${icon("plus")} Build the itinerary</button>
+                     <div class="empty-title">Aún no hay días</div>
+                     <p class="empty-text">Añade días para empezar a dar forma al viaje.</p>
+                     <button type="button" class="btn btn-ghost btn-sm" data-goto="itinerary">${icon("plus")} Crear el itinerario</button>
                    </div>`
             }
-            ${days.length > previewDays.length ? `<div style="padding-top:10px;text-align:center"><button type="button" class="btn-link" data-goto="itinerary">View all ${days.length} days ${icon("arrow-right")}</button></div>` : ""}
+            ${days.length > previewDays.length ? `<div style="padding-top:10px;text-align:center"><button type="button" class="btn-link" data-goto="itinerary">Ver los ${days.length} días ${icon("arrow-right")}</button></div>` : ""}
           </div>
         </section>
       </div>
@@ -143,33 +143,33 @@ export function renderOverview(root, trip, ctx) {
         <section class="card progress-card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("check-circle")} Organization</div>
-              <div class="card-subtitle">Calculated from your checklist</div>
+              <div class="card-title">${icon("check-circle")} Organización</div>
+              <div class="card-subtitle">Calculada a partir de tu lista de tareas</div>
             </div>
-            <button type="button" class="btn-link" data-goto="tasks">Open tasks ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="tasks">Ver tareas ${icon("arrow-right")}</button>
           </div>
           <div class="progress-card-body">
             <div class="donut" style="--p:${Number(trip.status) || 0}">
               <div class="donut-inner">
                 <div class="donut-value">${Number(trip.status) || 0}%</div>
-                <div class="donut-label">ready</div>
+                <div class="donut-label">listo</div>
               </div>
             </div>
             <div class="progress-facts">
               <div class="fact">
-                <span class="fact-label">${icon("kanban")} Tasks done</span>
+                <span class="fact-label">${icon("kanban")} Tareas hechas</span>
                 <span class="fact-value">${doneTasks}/${tasks.length}</span>
               </div>
               <div class="mini-track"><span style="width:${taskProgress(trip)}%"></span></div>
               <div class="fact">
-                <span class="fact-label">${icon("ticket")} Bookings</span>
+                <span class="fact-label">${icon("ticket")} Reservas</span>
                 <span class="fact-value">${trip.booking_count || 0}</span>
               </div>
               <div class="fact">
-                <span class="fact-label">${icon("file")} Documents</span>
+                <span class="fact-label">${icon("file")} Documentos</span>
                 <span class="fact-value">${trip.doc_count || 0}</span>
               </div>
-              <div class="field-hint">Tick tasks off and this progress updates automatically.</div>
+              <div class="field-hint">Marca tareas como hechas y este progreso se actualiza solo.</div>
             </div>
           </div>
         </section>
@@ -177,16 +177,16 @@ export function renderOverview(root, trip, ctx) {
         <section class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("route")} Transport</div>
-              <div class="card-subtitle">${transport.length} leg${transport.length === 1 ? "" : "s"} · getting there and around</div>
+              <div class="card-title">${icon("route")} Transporte</div>
+              <div class="card-subtitle">${transport.length} trayecto${transport.length === 1 ? "" : "s"} · llegada y movimientos</div>
             </div>
-            <button type="button" class="btn-link" data-goto="transport">Manage ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="transport">Gestionar ${icon("arrow-right")}</button>
           </div>
           <div class="card-body" style="padding-top:6px">
             ${
               shownTransport.length
                 ? `<div class="mini-list">${shownTransport.map(transportRow).join("")}</div>`
-                : `<div class="mini-list-empty">No transport saved yet. Add your arrival flight or train and the internal legs so they show up here.</div>`
+                : `<div class="mini-list-empty">Aún no hay transporte guardado. Añade el vuelo o tren de llegada y los trayectos internos para que aparezcan aquí.</div>`
             }
           </div>
         </section>
@@ -194,17 +194,17 @@ export function renderOverview(root, trip, ctx) {
         <section class="card map-card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("map")} Trip map</div>
-              <div class="card-subtitle">Your itinerary, bookings and ideas</div>
+              <div class="card-title">${icon("map")} Mapa del viaje</div>
+              <div class="card-subtitle">Tu itinerario, reservas e ideas</div>
             </div>
-            <button type="button" class="btn-link" data-goto="itinerary">Plan ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="itinerary">Planificar ${icon("arrow-right")}</button>
           </div>
           <div class="map-wrap">
             <div class="map map-short" data-trip-map></div>
           </div>
           <div class="map-legend">
-            <span><i class="legend-dot" style="background:#e2663f"></i>Itinerary</span>
-            <span><i class="legend-dot" style="background:#d9a441"></i>Bookings</span>
+            <span><i class="legend-dot" style="background:#e2663f"></i>Itinerario</span>
+            <span><i class="legend-dot" style="background:#d9a441"></i>Reservas</span>
             <span><i class="legend-dot" style="background:#2f8f83"></i>Ideas</span>
           </div>
         </section>
@@ -212,10 +212,10 @@ export function renderOverview(root, trip, ctx) {
         <section class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("ticket")} Next up</div>
-              <div class="card-subtitle">${trip.booking_count || 0} booking${trip.booking_count === 1 ? "" : "s"} saved</div>
+              <div class="card-title">${icon("ticket")} Próximas</div>
+              <div class="card-subtitle">${trip.booking_count || 0} reserva${trip.booking_count === 1 ? "" : "s"} guardada${trip.booking_count === 1 ? "" : "s"}</div>
             </div>
-            <button type="button" class="btn-link" data-goto="bookings">All ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="bookings">Ver todas ${icon("arrow-right")}</button>
           </div>
           <div class="card-body" style="padding-top:6px">
             ${
@@ -237,7 +237,7 @@ export function renderOverview(root, trip, ctx) {
                         </div>`;
                     })
                     .join("")}</div>`
-                : `<div class="mini-list-empty">No bookings yet. Add hotels, flights and visas in the Bookings tab.</div>`
+                : `<div class="mini-list-empty">Aún no hay reservas. Añade hoteles, apartamentos o excursiones en la pestaña Reservas.</div>`
             }
           </div>
         </section>
@@ -245,10 +245,10 @@ export function renderOverview(root, trip, ctx) {
         <section class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">${icon("folder")} Documents</div>
-              <div class="card-subtitle">${trip.doc_count || 0} file${trip.doc_count === 1 ? "" : "s"} stored</div>
+              <div class="card-title">${icon("folder")} Documentos</div>
+              <div class="card-subtitle">${trip.doc_count || 0} archivo${trip.doc_count === 1 ? "" : "s"} guardado${trip.doc_count === 1 ? "" : "s"}</div>
             </div>
-            <button type="button" class="btn-link" data-goto="documents">All ${icon("arrow-right")}</button>
+            <button type="button" class="btn-link" data-goto="documents">Ver todos ${icon("arrow-right")}</button>
           </div>
           <div class="card-body" style="padding-top:6px">
             ${
@@ -265,7 +265,7 @@ export function renderOverview(root, trip, ctx) {
                         </button>`,
                     )
                     .join("")}</div>`
-                : `<div class="mini-list-empty">Store PDFs, tickets and booking confirmations here.</div>`
+                : `<div class="mini-list-empty">Guarda aquí PDF, billetes y confirmaciones de reserva.</div>`
             }
           </div>
         </section>

@@ -6,9 +6,9 @@ import { openTaskModal } from "./forms.js";
 import { esc, icon, dueLabel, taskCategory } from "./utils.js";
 
 const STATUSES = [
-  { key: "todo", label: "To do", dot: "todo" },
-  { key: "doing", label: "In progress", dot: "doing" },
-  { key: "done", label: "Done", dot: "done" },
+  { key: "todo", label: "Pendiente", dot: "todo" },
+  { key: "doing", label: "En curso", dot: "doing" },
+  { key: "done", label: "Hecha", dot: "done" },
 ];
 
 export function taskCardHTML(task, { mini = false } = {}) {
@@ -18,14 +18,14 @@ export function taskCardHTML(task, { mini = false } = {}) {
   return `
     <div class="kcard ${done ? "done" : ""}" draggable="true" data-task-id="${task.id}" data-status="${esc(task.status)}">
       <div class="kcard-title-row">
-        <button type="button" class="kcard-check" data-task-toggle title="${done ? "Mark as to do" : "Mark as done"}" aria-label="${done ? "Mark as to do" : "Mark as done"}">${icon("check")}</button>
+        <button type="button" class="kcard-check" data-task-toggle title="${done ? "Marcar como pendiente" : "Marcar como hecha"}" aria-label="${done ? "Marcar como pendiente" : "Marcar como hecha"}">${icon("check")}</button>
         <div class="kcard-title">${esc(task.title)}</div>
         ${
           mini
             ? ""
             : `<div class="kcard-actions">
-                 <button type="button" class="icon-btn" data-task-edit title="Edit task" aria-label="Edit task">${icon("edit")}</button>
-                 <button type="button" class="icon-btn danger" data-task-delete title="Delete task" aria-label="Delete task">${icon("trash")}</button>
+                 <button type="button" class="icon-btn" data-task-edit title="Editar tarea" aria-label="Editar tarea">${icon("edit")}</button>
+                 <button type="button" class="icon-btn danger" data-task-delete title="Eliminar tarea" aria-label="Eliminar tarea">${icon("trash")}</button>
                </div>`
         }
       </div>
@@ -50,12 +50,12 @@ export function kanbanColumnsHTML(tasks, { mini = false, limit = 4 } = {}) {
             ${status.label}
             <span class="kanban-col-count">${all.length}</span>
           </div>
-          <button type="button" class="icon-btn" data-add-task="${status.key}" title="Add a task" aria-label="Add a task">${icon("plus")}</button>
+          <button type="button" class="icon-btn" data-add-task="${status.key}" title="Añadir una tarea" aria-label="Añadir una tarea">${icon("plus")}</button>
         </div>
         <div class="kanban-col-body">
           ${visible.map((task) => taskCardHTML(task, { mini })).join("")}
-          ${!visible.length ? `<div class="kanban-empty">Nothing here yet</div>` : ""}
-          ${hidden > 0 ? `<div class="kanban-more">+${hidden} more</div>` : ""}
+          ${!visible.length ? `<div class="kanban-empty">Aquí no hay nada todavía</div>` : ""}
+          ${hidden > 0 ? `<div class="kanban-more">+${hidden} más</div>` : ""}
         </div>
       </div>`;
   }).join("");
@@ -90,7 +90,7 @@ export function wireKanban(root, { trip, refresh, mini = false } = {}) {
         await api.updateTask(task.id, { status: next });
         await refresh();
       } catch (error) {
-        toast(error.message || "Could not update the task.", "error");
+        toast(error.message || "No se pudo actualizar la tarea.", "error");
       }
     });
 
@@ -104,13 +104,13 @@ export function wireKanban(root, { trip, refresh, mini = false } = {}) {
       event.stopPropagation();
       if (!task) return;
       const confirmed = await confirmDialog({
-        title: "Delete task?",
-        message: `“${task.title}” will be removed from this trip.`,
-        confirmLabel: "Delete task",
+        title: "¿Eliminar la tarea?",
+        message: `“${task.title}” se quitará de este viaje.`,
+        confirmLabel: "Eliminar tarea",
         onConfirm: async () => {
           await api.deleteTask(task.id);
           await refresh();
-          toast("Task deleted.");
+          toast("Tarea eliminada.");
         },
       });
       return confirmed;
@@ -147,7 +147,7 @@ export function wireKanban(root, { trip, refresh, mini = false } = {}) {
         await api.updateTask(taskId, { status });
         await refresh();
       } catch (error) {
-        toast(error.message || "Could not move the task.", "error");
+        toast(error.message || "No se pudo mover la tarea.", "error");
       }
     });
   });

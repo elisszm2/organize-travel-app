@@ -23,12 +23,12 @@ import { renderDocuments } from "./views/documents.js";
 import { renderRecommendations } from "./views/recommendations.js";
 
 const TABS = [
-  { key: "overview", label: "Overview", icon: "compass" },
-  { key: "itinerary", label: "Itinerary", icon: "route", count: (trip) => trip.day_count },
-  { key: "transport", label: "Transport", icon: "plane", count: (trip) => trip.transport_count },
-  { key: "tasks", label: "Tasks", icon: "kanban", count: (trip) => trip.task_total },
-  { key: "bookings", label: "Bookings", icon: "ticket", count: (trip) => trip.booking_count },
-  { key: "documents", label: "Documents", icon: "folder", count: (trip) => trip.doc_count },
+  { key: "overview", label: "Resumen", icon: "compass" },
+  { key: "itinerary", label: "Itinerario", icon: "route", count: (trip) => trip.day_count },
+  { key: "transport", label: "Transporte", icon: "plane", count: (trip) => trip.transport_count },
+  { key: "tasks", label: "Tareas", icon: "kanban", count: (trip) => trip.task_total },
+  { key: "bookings", label: "Reservas", icon: "ticket", count: (trip) => trip.booking_count },
+  { key: "documents", label: "Documentos", icon: "folder", count: (trip) => trip.doc_count },
   { key: "recommendations", label: "Ideas", icon: "sparkles", count: (trip) => trip.recommendation_count },
 ];
 
@@ -163,7 +163,7 @@ async function loadTrip(tripId, tab = "overview") {
     renderTripList();
     closeDrawer();
   } catch (error) {
-    toast(error.message || "Could not open this trip.", "error");
+    toast(error.message || "No se pudo abrir este viaje.", "error");
     await refreshTrips();
     const next = state.trips[0];
     if (next) {
@@ -183,7 +183,7 @@ async function refreshTrips() {
     state.trips = data.trips || [];
     renderTripList();
   } catch (error) {
-    toast(error.message || "Could not load your trips.", "error");
+    toast(error.message || "No se pudieron cargar tus viajes.", "error");
   }
 }
 
@@ -198,7 +198,7 @@ async function refreshTrip() {
     renderTripList();
     renderMain({ keepScroll: true });
   } catch (error) {
-    toast(error.message || "Could not refresh this trip.", "error");
+    toast(error.message || "No se pudo actualizar este viaje.", "error");
   }
 }
 
@@ -231,8 +231,8 @@ function renderTripList() {
   if (!trips.length) {
     list.innerHTML = `
       <div class="sidebar-empty">
-        <strong>${query ? "No trips match" : "No trips yet"}</strong>
-        ${query ? "Try a different destination." : "Your first adventure starts with a single click."}
+        <strong>${query ? "Ningún viaje coincide" : "Aún no hay viajes"}</strong>
+        ${query ? "Prueba con otro destino." : "Tu primera aventura empieza con un clic."}
       </div>`;
     return;
   }
@@ -273,16 +273,16 @@ function renderTripList() {
    -------------------------------------------------------------------------- */
 
 function tripTiming(trip) {
-  if (!trip.start_date) return "Your trip";
+  if (!trip.start_date) return "Tu viaje";
   const start = parseDate(trip.start_date);
-  if (!start) return "Your trip";
+  if (!start) return "Tu viaje";
   const today = parseDate(todayISO());
   const days = Math.ceil((start - today) / 86400000);
-  if (days > 1) return `${days} days to go`;
-  if (days === 1) return "Tomorrow";
-  if (days === 0) return "Today";
-  if (trip.end_date && trip.end_date >= todayISO()) return "Happening now";
-  return "Past trip";
+  if (days > 1) return `Quedan ${days} días`;
+  if (days === 1) return "Mañana";
+  if (days === 0) return "Hoy";
+  if (trip.end_date && trip.end_date >= todayISO()) return "En marcha";
+  return "Viaje pasado";
 }
 
 function renderMain({ keepScroll = false } = {}) {
@@ -301,8 +301,8 @@ function renderMain({ keepScroll = false } = {}) {
       coverUrl ? ` style="--cover:url('${esc(coverUrl)}')"` : ""
     }>
       <div class="hero-actions">
-        <button type="button" class="icon-btn on-hero" data-edit-trip title="Edit trip" aria-label="Edit trip">${icon("edit")}</button>
-        <button type="button" class="icon-btn on-hero" data-delete-trip title="Delete trip" aria-label="Delete trip">${icon("trash")}</button>
+        <button type="button" class="icon-btn on-hero" data-edit-trip title="Editar viaje" aria-label="Editar viaje">${icon("edit")}</button>
+        <button type="button" class="icon-btn on-hero" data-delete-trip title="Eliminar viaje" aria-label="Eliminar viaje">${icon("trash")}</button>
       </div>
       <div class="trip-hero-content">
         <div class="hero-eyebrow"><span class="dot"></span>${esc(tripTiming(trip))}</div>
@@ -318,13 +318,13 @@ function renderMain({ keepScroll = false } = {}) {
         <div class="status-ring" style="--p:${Number(trip.status) || 0}">
           <div class="status-ring-inner">
             <div class="status-ring-value">${Number(trip.status) || 0}%</div>
-            <div class="status-ring-label">organized</div>
+            <div class="status-ring-label">organizado</div>
           </div>
         </div>
       </div>
     </header>
 
-    <nav class="tabs" aria-label="Trip sections">
+    <nav class="tabs" aria-label="Secciones del viaje">
       ${TABS.map((tab) => {
         const count = tab.count ? Number(tab.count(trip) || 0) : 0;
         return `
@@ -365,9 +365,9 @@ function renderMain({ keepScroll = false } = {}) {
 
 async function deleteTrip(trip) {
   await confirmDialog({
-    title: "Delete this trip?",
-    message: `“${trip.title}”, its itinerary, tasks, bookings and uploaded documents will be permanently deleted.`,
-    confirmLabel: "Delete trip",
+    title: "¿Eliminar este viaje?",
+    message: `“${trip.title}”, su itinerario, tareas, reservas y documentos subidos se eliminarán permanentemente.`,
+    confirmLabel: "Eliminar viaje",
     onConfirm: async () => {
       await api.deleteTrip(trip.id);
       state.trip = null;
@@ -380,7 +380,7 @@ async function deleteTrip(trip) {
         history.replaceState(null, "", "#/");
         renderWelcome();
       }
-      toast("Trip deleted.");
+      toast("Viaje eliminado.");
     },
   });
 }
@@ -390,35 +390,35 @@ async function deleteTrip(trip) {
    -------------------------------------------------------------------------- */
 
 function renderWelcome() {
-  document.title = "Wanderlusst Travel — Travel organizer";
+  document.title = "Wanderlusst Travel — Organizador de viajes";
   main.innerHTML = `
     <div class="welcome">
       <div class="welcome-inner">
         <div class="welcome-art">${icon("compass")}</div>
-        <h1>Where to next?</h1>
-        <p>Plan the days, keep the bookings and documents together, and see at a glance what is still left to organize.</p>
-        <button type="button" class="btn btn-primary" data-welcome-new>${icon("plus")} Plan your first trip</button>
+        <h1>¿Y ahora, a dónde?</h1>
+        <p>Planifica los días, ten reservas y documentos a mano y ve de un vistazo lo que queda por organizar.</p>
+        <button type="button" class="btn btn-primary" data-welcome-new>${icon("plus")} Planifica tu primer viaje</button>
 
         <div class="welcome-features">
           <div class="welcome-feature">
             <div class="mini-icon accent">${icon("route")}</div>
-            <strong>Day-by-day itinerary</strong>
-            <span>Build each day with times, places and notes.</span>
+            <strong>Itinerario día a día</strong>
+            <span>Construye cada día con horarios, lugares y notas.</span>
           </div>
           <div class="welcome-feature">
             <div class="mini-icon teal">${icon("kanban")}</div>
-            <strong>Checklist board</strong>
-            <span>Drag tasks from to-do to done.</span>
+            <strong>Tablero de tareas</strong>
+            <span>Arrastra tareas de pendiente a hecha.</span>
           </div>
           <div class="welcome-feature">
             <div class="mini-icon gold">${icon("ticket")}</div>
-            <strong>Bookings &amp; PDFs</strong>
-            <span>Hotels, flights, visas and confirmations.</span>
+            <strong>Reservas y PDF</strong>
+            <span>Hoteles, excursiones y confirmaciones.</span>
           </div>
           <div class="welcome-feature">
             <div class="mini-icon">${icon("map")}</div>
-            <strong>Everything on a map</strong>
-            <span>See your route, stays and saved ideas.</span>
+            <strong>Todo en un mapa</strong>
+            <span>Tu ruta, alojamientos e ideas guardadas.</span>
           </div>
         </div>
       </div>
@@ -446,7 +446,7 @@ async function boot() {
     renderTripList();
     await loadRoute();
   } catch (error) {
-    main.innerHTML = `<div class="loading-screen"><p>${esc(error.message || "Could not connect to the server.")}</p></div>`;
+    main.innerHTML = `<div class="loading-screen"><p>${esc(error.message || "No se pudo conectar con el servidor.")}</p></div>`;
   }
   window.addEventListener("hashchange", loadRoute);
 }

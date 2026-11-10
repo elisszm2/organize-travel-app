@@ -89,14 +89,14 @@ export function fmtDate(iso, style = "medium") {
       : style === "long"
         ? { weekday: "short", day: "numeric", month: "long", year: "numeric" }
         : { day: "numeric", month: "short", year: "numeric" };
-  return new Intl.DateTimeFormat("en-GB", opts).format(d);
+  return new Intl.DateTimeFormat("es-ES", opts).format(d);
 }
 
 export function fmtWeekday(iso) {
   if (!iso) return "";
   const d = parseDate(iso);
   if (!d) return "";
-  return new Intl.DateTimeFormat("en-GB", { weekday: "long" }).format(d);
+  return new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(d);
 }
 
 export function parseDate(iso) {
@@ -109,15 +109,15 @@ export function parseDate(iso) {
 }
 
 export function fmtDateRange(start, end) {
-  if (!start && !end) return "Dates to be decided";
+  if (!start && !end) return "Fechas por decidir";
   if (start && !end) return fmtDate(start);
-  if (!start && end) return `Until ${fmtDate(end)}`;
+  if (!start && end) return `Hasta ${fmtDate(end)}`;
   const a = parseDate(start);
   const b = parseDate(end);
   if (!a || !b) return `${fmtDate(start)} – ${fmtDate(end)}`;
   const sameYear = a.getFullYear() === b.getFullYear();
   const sameMonth = sameYear && a.getMonth() === b.getMonth();
-  const fmt = (d, opts) => new Intl.DateTimeFormat("en-GB", opts).format(d);
+  const fmt = (d, opts) => new Intl.DateTimeFormat("es-ES", opts).format(d);
   if (sameMonth) {
     return `${fmt(a, { day: "numeric" })} – ${fmt(b, { day: "numeric", month: "short", year: "numeric" })}`;
   }
@@ -129,13 +129,13 @@ export function fmtDateRange(start, end) {
 
 export function durationLabel(trip) {
   const count = Number(trip?.day_count || 0);
-  return `${count} ${count === 1 ? "day" : "days"}`;
+  return `${count} ${count === 1 ? "día" : "días"}`;
 }
 
 export function fmtDateTime(value) {
   const d = parseDate(value);
   if (!d) return "";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("es-ES", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -163,10 +163,10 @@ export function dueLabel(iso) {
   if (!d) return "";
   const today = parseDate(todayISO());
   const diff = Math.round((d - today) / 86400000);
-  if (diff < 0) return { text: `${Math.abs(diff)}d overdue`, overdue: true };
-  if (diff === 0) return { text: "Due today", overdue: false, soon: true };
-  if (diff === 1) return { text: "Due tomorrow", overdue: false, soon: true };
-  if (diff <= 7) return { text: `Due in ${diff}d`, overdue: false, soon: true };
+  if (diff < 0) return { text: `Vencida hace ${Math.abs(diff)} d`, overdue: true };
+  if (diff === 0) return { text: "Vence hoy", overdue: false, soon: true };
+  if (diff === 1) return { text: "Vence mañana", overdue: false, soon: true };
+  if (diff <= 7) return { text: `Vence en ${diff} d`, overdue: false, soon: true };
   return { text: fmtDate(iso, "short"), overdue: false };
 }
 
@@ -202,54 +202,56 @@ export function fileIconName(mimetype, name) {
 }
 
 export const ACTIVITY_CATEGORIES = {
-  sightseeing: { label: "Sightseeing", icon: "camera", tone: "sightseeing" },
-  food: { label: "Food & drink", icon: "utensils", tone: "food" },
-  transport: { label: "Transport", icon: "plane", tone: "transport" },
-  lodging: { label: "Lodging", icon: "bed", tone: "lodging" },
-  shopping: { label: "Shopping", icon: "wallet", tone: "shopping" },
-  activity: { label: "Activity", icon: "sparkles", tone: "activity" },
-  other: { label: "Other", icon: "flag", tone: "other" },
+  sightseeing: { label: "Visitas", icon: "camera", tone: "sightseeing" },
+  food: { label: "Comida y bebida", icon: "utensils", tone: "food" },
+  transport: { label: "Transporte", icon: "plane", tone: "transport" },
+  lodging: { label: "Alojamiento", icon: "bed", tone: "lodging" },
+  shopping: { label: "Compras", icon: "wallet", tone: "shopping" },
+  activity: { label: "Actividad", icon: "sparkles", tone: "activity" },
+  other: { label: "Otra", icon: "flag", tone: "other" },
 };
 
 export const TASK_CATEGORIES = {
-  booking: { label: "Booking", icon: "ticket", tone: "pill-accent" },
+  booking: { label: "Reserva", icon: "ticket", tone: "pill-accent" },
   hotel: { label: "Hotel", icon: "bed", tone: "pill-plum" },
-  visa: { label: "Visa", icon: "passport", tone: "pill-green" },
-  transport: { label: "Transport", icon: "plane", tone: "pill-teal" },
-  documents: { label: "Documents", icon: "file", tone: "pill-gold" },
-  other: { label: "Other", icon: "flag", tone: "" },
+  visa: { label: "Visado", icon: "passport", tone: "pill-green" },
+  transport: { label: "Transporte", icon: "plane", tone: "pill-teal" },
+  documents: { label: "Documentos", icon: "file", tone: "pill-gold" },
+  other: { label: "Otra", icon: "flag", tone: "" },
 };
 
+/* Bookings only cover accommodations and trips/excursions. Older rows with
+   other types still render, grouped under a generic fallback. */
 export const BOOKING_TYPES = {
-  hotel: { label: "Hotel", icon: "bed", plural: "Hotels & stays" },
-  flight: { label: "Flight", icon: "plane", plural: "Flights" },
-  train: { label: "Train", icon: "train", plural: "Trains & buses" },
-  car: { label: "Car", icon: "car", plural: "Car rental" },
-  visa: { label: "Visa", icon: "passport", plural: "Visas" },
-  insurance: { label: "Insurance", icon: "shield", plural: "Insurance" },
-  other: { label: "Other", icon: "ticket", plural: "Other bookings" },
+  hotel: { label: "Hotel", icon: "bed", plural: "Hoteles" },
+  apartment: { label: "Apartamento", icon: "home", plural: "Apartamentos" },
+  hostel: { label: "Hostal", icon: "bed", plural: "Hostales" },
+  house: { label: "Casa / alquiler", icon: "home", plural: "Casas y alquileres" },
+  trip: { label: "Viaje / excursión", icon: "route", plural: "Viajes y excursiones" },
 };
+
+export const BOOKING_FALLBACK = { label: "Otra reserva", icon: "ticket", plural: "Otras reservas" };
 
 export const RECOMMENDATION_CATEGORIES = {
-  place: { label: "Place", icon: "pin", tone: "" },
-  food: { label: "Food", icon: "utensils", tone: "food" },
-  experience: { label: "Experience", icon: "sparkles", tone: "experience" },
-  tip: { label: "Tip", icon: "info", tone: "tip" },
+  place: { label: "Lugar", icon: "pin", tone: "" },
+  food: { label: "Comida", icon: "utensils", tone: "food" },
+  experience: { label: "Experiencia", icon: "sparkles", tone: "experience" },
+  tip: { label: "Consejo", icon: "info", tone: "tip" },
 };
 
 export const TRANSPORT_SCOPES = {
-  arrival: { label: "Getting there", icon: "plane" },
-  internal: { label: "Getting around", icon: "route" },
-  return: { label: "Getting home", icon: "home" },
+  arrival: { label: "Llegada", icon: "plane" },
+  internal: { label: "Desplazamientos", icon: "route" },
+  return: { label: "Vuelta", icon: "home" },
 };
 
 export const TRANSPORT_TYPES = {
-  flight: { label: "Flight", icon: "plane" },
-  train: { label: "Train", icon: "train" },
+  flight: { label: "Vuelo", icon: "plane" },
+  train: { label: "Tren", icon: "train" },
   bus: { label: "Bus", icon: "bus" },
-  ferry: { label: "Ferry / boat", icon: "ferry" },
-  car: { label: "Car", icon: "car" },
-  other: { label: "Other", icon: "route" },
+  ferry: { label: "Ferry / barco", icon: "ferry" },
+  car: { label: "Coche", icon: "car" },
+  other: { label: "Otro", icon: "route" },
 };
 
 export function taskCategory(key) {
@@ -257,7 +259,7 @@ export function taskCategory(key) {
 }
 
 export function bookingType(key) {
-  return BOOKING_TYPES[key] || BOOKING_TYPES.other;
+  return BOOKING_TYPES[key] || BOOKING_FALLBACK;
 }
 
 export function activityCategory(key) {

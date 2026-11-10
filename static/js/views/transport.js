@@ -1,7 +1,7 @@
 /* Transport legs: arriving, getting around and heading home. */
 
 import { api } from "../api.js";
-import { confirmDialog, toast } from "../ui.js";
+import { confirmDialog, previewDocument, toast } from "../ui.js";
 import { openTransportModal } from "../forms.js";
 import {
   esc,
@@ -10,13 +10,14 @@ import {
   transportType,
   transportScope,
   copyText,
+  fileIconName,
   TRANSPORT_SCOPES,
 } from "../utils.js";
 
 function money(amount, currency) {
   if (amount === null || amount === undefined || amount === "") return "";
   try {
-    return new Intl.NumberFormat("en-GB", {
+    return new Intl.NumberFormat("es-ES", {
       style: "currency",
       currency: currency || "EUR",
       maximumFractionDigits: 2,
@@ -31,7 +32,7 @@ function stopHTML(place, date, time, label) {
     <div class="transport-stop">
       <span class="transport-stop-label">${esc(label)}</span>
       <strong>${esc(place || "—")}</strong>
-      <small>${esc([fmtDate(date, "short"), time].filter(Boolean).join(" · ") || "Time to be decided")}</small>
+      <small>${esc([fmtDate(date, "short"), time].filter(Boolean).join(" · ") || "Hora por decidir")}</small>
     </div>`;
 }
 
@@ -42,35 +43,48 @@ function transportCard(item) {
   return `
     <article class="booking-card transport-card" data-transport-id="${item.id}">
       <div class="booking-card-top">
-        <div class="booking-icon ${esc(item.type)}">${icon(type.icon)}</div>
         <div class="booking-head-main">
           <div class="booking-title">${esc(item.title)}</div>
           <div class="booking-provider">${esc([scope.label, type.label, item.provider].filter(Boolean).join(" · "))}</div>
         </div>
         <div class="booking-actions">
-          <button type="button" class="icon-btn" data-transport-edit title="Edit transport" aria-label="Edit transport">${icon("edit")}</button>
-          <button type="button" class="icon-btn danger" data-transport-delete title="Delete transport" aria-label="Delete transport">${icon("trash")}</button>
+          <button type="button" class="icon-btn" data-transport-edit title="Editar transporte" aria-label="Editar transporte">${icon("edit")}</button>
+          <button type="button" class="icon-btn danger" data-transport-delete title="Eliminar transporte" aria-label="Eliminar transporte">${icon("trash")}</button>
         </div>
       </div>
 
       <div class="transport-route">
-        ${stopHTML(item.from_place, item.depart_date, item.depart_time, "From")}
+        ${stopHTML(item.from_place, item.depart_date, item.depart_time, "Origen")}
         <div class="transport-arrow">${icon(type.icon)}<span></span></div>
-        ${stopHTML(item.to_place, item.arrive_date || item.depart_date, item.arrive_time, "To")}
+        ${stopHTML(item.to_place, item.arrive_date || item.depart_date, item.arrive_time, "Destino")}
       </div>
 
       ${
         item.confirmation
           ? `<div class="booking-confirmation">
-               ${icon("ticket")}
-               <span>Confirmation</span>
+               <span>Confirmación</span>
                <strong>${esc(item.confirmation)}</strong>
-               <button type="button" class="icon-btn" data-copy="${esc(item.confirmation)}" title="Copy confirmation code" aria-label="Copy confirmation code">${icon("copy")}</button>
+               <button type="button" class="icon-btn" data-copy="${esc(item.confirmation)}" title="Copiar código de confirmación" aria-label="Copiar código de confirmación">${icon("copy")}</button>
              </div>`
           : ""
       }
 
       ${item.notes ? `<div class="booking-notes">${esc(item.notes)}</div>` : ""}
+
+      ${
+        (item.documents || []).length
+          ? `<div class="booking-docs">
+               ${(item.documents || [])
+                 .map(
+                   (doc) => `
+                     <button type="button" class="doc-chip" data-preview-doc="${doc.id}" title="Ver ${esc(doc.name)}">
+                       ${icon(fileIconName(doc.mimetype, doc.name))}<span>${esc(doc.name)}</span>
+                     </button>`,
+                 )
+                 .join("")}
+             </div>`
+          : ""
+      }
 
       <div class="booking-foot">
         <span class="booking-amount">${esc(amount || "—")}</span>
@@ -85,10 +99,10 @@ export function renderTransport(root, trip, ctx) {
   root.innerHTML = `
     <div class="section-head">
       <div>
-        <h2>Transport</h2>
-        <p>How you get there, how you move around and how you get home · ${transport.length} leg${transport.length === 1 ? "" : "s"} saved</p>
+        <h2>Transporte</h2>
+        <p>Cómo llegas, cómo te mueves por allí y cómo vuelves · ${transport.length} trayecto${transport.length === 1 ? "" : "s"} guardado${transport.length === 1 ? "" : "s"}</p>
       </div>
-      <button type="button" class="btn btn-primary" data-add-transport>${icon("plus")} Add transport</button>
+      <button type="button" class="btn btn-primary" data-add-transport>${icon("plus")} Añadir transporte</button>
     </div>
 
     ${
@@ -109,9 +123,9 @@ export function renderTransport(root, trip, ctx) {
           </div>`
         : `<div class="card"><div class="empty-state">
              <div class="empty-icon">${icon("route")}</div>
-             <div class="empty-title">No transport saved</div>
-             <p class="empty-text">Add the flight, train or bus that gets you to your destination, then any internal legs. They will appear in the trip overview too.</p>
-             <button type="button" class="btn btn-primary btn-sm" data-add-transport>${icon("plus")} Add first leg</button>
+             <div class="empty-title">Sin transportes guardados</div>
+             <p class="empty-text">Añade el vuelo, tren o bus que te lleva a tu destino y, después, los trayectos internos. También aparecerán en el resumen del viaje.</p>
+             <button type="button" class="btn btn-primary btn-sm" data-add-transport>${icon("plus")} Añadir el primer trayecto</button>
            </div></div>`
     }`;
 
@@ -129,20 +143,27 @@ export function renderTransport(root, trip, ctx) {
 
     card.querySelector("[data-transport-delete]")?.addEventListener("click", async () => {
       await confirmDialog({
-        title: "Delete transport?",
-        message: `“${item.title}” will be removed from this trip.`,
-        confirmLabel: "Delete transport",
+        title: "¿Eliminar el transporte?",
+        message: `“${item.title}” se eliminará de este viaje.`,
+        confirmLabel: "Eliminar transporte",
         onConfirm: async () => {
           await api.deleteTransport(item.id);
           await ctx.refresh();
-          toast("Transport deleted.");
+          toast("Transporte eliminado.");
         },
       });
     });
 
     card.querySelector("[data-copy]")?.addEventListener("click", async (event) => {
       const ok = await copyText(event.currentTarget.dataset.copy);
-      toast(ok ? "Confirmation code copied." : "Could not copy the code.", ok ? "success" : "error");
+      toast(ok ? "Código de confirmación copiado." : "No se pudo copiar el código.", ok ? "success" : "error");
+    });
+
+    card.querySelectorAll("[data-preview-doc]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const doc = (item.documents || []).find((entry) => entry.id === Number(button.dataset.previewDoc));
+        if (doc) previewDocument(doc);
+      });
     });
   });
 }

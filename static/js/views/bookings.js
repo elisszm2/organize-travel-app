@@ -9,6 +9,7 @@ import {
   fmtDateRange,
   bookingType,
   BOOKING_TYPES,
+  BOOKING_FALLBACK,
   copyText,
   fileIconName,
 } from "../utils.js";
@@ -16,7 +17,7 @@ import {
 function money(amount, currency) {
   if (amount === null || amount === undefined || amount === "") return "";
   try {
-    return new Intl.NumberFormat("en-GB", {
+    return new Intl.NumberFormat("es-ES", {
       style: "currency",
       currency: currency || "EUR",
       maximumFractionDigits: 2,
@@ -39,8 +40,8 @@ function bookingCard(booking) {
           ${booking.provider ? `<div class="booking-provider">${esc(booking.provider)}</div>` : ""}
         </div>
         <div class="booking-actions">
-          <button type="button" class="icon-btn" data-booking-edit title="Edit booking" aria-label="Edit booking">${icon("edit")}</button>
-          <button type="button" class="icon-btn danger" data-booking-delete title="Delete booking" aria-label="Delete booking">${icon("trash")}</button>
+          <button type="button" class="icon-btn" data-booking-edit title="Editar reserva" aria-label="Editar reserva">${icon("edit")}</button>
+          <button type="button" class="icon-btn danger" data-booking-delete title="Eliminar reserva" aria-label="Eliminar reserva">${icon("trash")}</button>
         </div>
       </div>
 
@@ -53,9 +54,9 @@ function bookingCard(booking) {
         booking.confirmation
           ? `<div class="booking-confirmation">
                ${icon("ticket")}
-               <span>Confirmation</span>
+               <span>Confirmación</span>
                <strong>${esc(booking.confirmation)}</strong>
-               <button type="button" class="icon-btn" data-copy="${esc(booking.confirmation)}" title="Copy confirmation code" aria-label="Copy confirmation code">${icon("copy")}</button>
+               <button type="button" class="icon-btn" data-copy="${esc(booking.confirmation)}" title="Copiar código de confirmación" aria-label="Copiar código de confirmación">${icon("copy")}</button>
              </div>`
           : ""
       }
@@ -68,7 +69,7 @@ function bookingCard(booking) {
                ${(booking.documents || [])
                  .map(
                    (doc) => `
-                     <button type="button" class="doc-chip" data-preview-doc="${doc.id}" title="Preview ${esc(doc.name)}">
+                     <button type="button" class="doc-chip" data-preview-doc="${doc.id}" title="Ver ${esc(doc.name)}">
                        ${icon(fileIconName(doc.mimetype, doc.name))}<span>${esc(doc.name)}</span>
                      </button>`,
                  )
@@ -79,7 +80,7 @@ function bookingCard(booking) {
 
       <div class="booking-foot">
         <span class="booking-amount">${esc(amount || "—")}</span>
-        <button type="button" class="btn btn-soft btn-sm" data-booking-attach>${icon("upload")} Attach file</button>
+        <button type="button" class="btn btn-soft btn-sm" data-booking-attach>${icon("upload")} Adjuntar archivo</button>
       </div>
     </article>`;
 }
@@ -93,14 +94,19 @@ export function renderBookings(root, trip, ctx) {
       items: bookings.filter((booking) => booking.type === key),
     }))
     .filter((group) => group.items.length);
+  // Older rows with types that are no longer offered still show up here.
+  const legacy = bookings.filter((booking) => !BOOKING_TYPES[booking.type]);
+  if (legacy.length) {
+    groups.push({ key: "other", meta: BOOKING_FALLBACK, items: legacy });
+  }
 
   root.innerHTML = `
     <div class="section-head">
       <div>
-        <h2>Bookings &amp; paperwork</h2>
-        <p>Hotels, flights, trains, visas and insurance · ${bookings.length} saved</p>
+        <h2>Reservas</h2>
+        <p>Alojamientos (hoteles, apartamentos, hostales…) y viajes o excursiones · ${bookings.length} guardada${bookings.length === 1 ? "" : "s"}</p>
       </div>
-      <button type="button" class="btn btn-primary" data-add-booking>${icon("plus")} Add booking</button>
+      <button type="button" class="btn btn-primary" data-add-booking>${icon("plus")} Añadir reserva</button>
     </div>
 
     ${
@@ -118,9 +124,9 @@ export function renderBookings(root, trip, ctx) {
           </div>`
         : `<div class="card">${`<div class="empty-state">
              <div class="empty-icon">${icon("ticket")}</div>
-             <div class="empty-title">No bookings saved</div>
-             <p class="empty-text">Add your hotel, flight, train, visa or insurance details and attach the confirmation PDF.</p>
-             <button type="button" class="btn btn-primary btn-sm" data-add-booking>${icon("plus")} Add first booking</button>
+             <div class="empty-title">Sin reservas guardadas</div>
+             <p class="empty-text">Añade tu hotel, apartamento, hostal o la excursión contratada y adjunta el PDF de confirmación.</p>
+             <button type="button" class="btn btn-primary btn-sm" data-add-booking>${icon("plus")} Añadir la primera reserva</button>
            </div>`}</div>`
     }
 
@@ -143,13 +149,13 @@ export function renderBookings(root, trip, ctx) {
 
     card.querySelector("[data-booking-delete]")?.addEventListener("click", async () => {
       await confirmDialog({
-        title: "Delete booking?",
-        message: `“${booking.title}” will be removed. Attached documents stay in the Documents tab.`,
-        confirmLabel: "Delete booking",
+        title: "¿Eliminar la reserva?",
+        message: `“${booking.title}” se eliminará. Los documentos adjuntos permanecen en la pestaña Documentos.`,
+        confirmLabel: "Eliminar reserva",
         onConfirm: async () => {
           await api.deleteBooking(booking.id);
           await ctx.refresh();
-          toast("Booking deleted.");
+          toast("Reserva eliminada.");
         },
       });
     });
@@ -157,7 +163,7 @@ export function renderBookings(root, trip, ctx) {
     card.querySelector("[data-copy]")?.addEventListener("click", async (event) => {
       const value = event.currentTarget.dataset.copy;
       const ok = await copyText(value);
-      toast(ok ? "Confirmation code copied." : "Could not copy the code.", ok ? "success" : "error");
+      toast(ok ? "Código de confirmación copiado." : "No se pudo copiar el código.", ok ? "success" : "error");
     });
 
     card.querySelector("[data-booking-attach]")?.addEventListener("click", () => {
@@ -179,10 +185,10 @@ export function renderBookings(root, trip, ctx) {
     if (!file || !attachTarget) return;
     try {
       await api.uploadDocument(trip.id, file, attachTarget.id);
-      toast(`“${file.name}” attached.`);
+      toast(`“${file.name}” adjuntado.`);
       await ctx.refresh();
     } catch (error) {
-      toast(error.message || "Could not upload the file.", "error");
+      toast(error.message || "No se pudo subir el archivo.", "error");
     } finally {
       attachTarget = null;
       fileInput.value = "";
